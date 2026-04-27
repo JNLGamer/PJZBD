@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-02-PLAN.md (sanity meter ModData init + profession lookup)
-last_updated: "2026-04-27T22:38:07.793Z"
+status: verifying
+stopped_at: Completed 01-03-PLAN.md (kill-event sanity decrement) — Phase 1 implementation complete
+last_updated: "2026-04-27T22:44:00.222Z"
 last_activity: 2026-04-27
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 
 Phase: 01 (foundation) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 1m | 2 tasks | 2 files |
 | Phase 01-foundation P02 | 1m 42s | 2 tasks | 1 files |
+| Phase 01-foundation P03 | 2m 13s | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: ModData init via Events.OnCreatePlayer with idempotent guard — handles new and loaded characters with one handler
 - [Phase 01-foundation]: Cache profession id in md.SanityTraits.profession — Phase 4 reads it without re-querying descriptor (Pitfall 2 mitigation)
 - [Phase 01-foundation]: STARTING_SANITY_BY_PROFESSION seeded with 7 archetype entries in Phase 1; Phase 4 will extend to all 24 vanilla professions
+- [Phase 01-foundation]: Use B42-correct event names OnZombieDead (singular) and OnWeaponHitXp; reference/events.md B41 names do not exist in B42
+- [Phase 01-foundation]: OnZombieDead uses getPlayer() (engine doesn't pass attacker); OnWeaponHitXp uses owner argument (engine does)
+- [Phase 01-foundation]: Defer multi-hit double-decrement guard (Pitfall 3) to Phase 4 — out of scope for Phase 1 SP
 
 ### Pending Todos
 
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T22:38:07.789Z
-Stopped at: Completed 01-02-PLAN.md (sanity meter ModData init + profession lookup)
+Last session: 2026-04-27T22:44:00.218Z
+Stopped at: Completed 01-03-PLAN.md (kill-event sanity decrement) — Phase 1 implementation complete
 Resume file: None

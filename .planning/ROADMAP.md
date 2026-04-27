@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
   - [x] 01-01-PLAN.md — Mod skeleton, mod.info, namespace bootstrap (DEF-04)
   - [x] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
-  - [ ] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
+  - [x] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
 
 ### Phase 2: Stage Transitions
 **Goal**: Characters progress through all four deterioration stages with correct traits applied and removed, with no double-application
