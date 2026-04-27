@@ -3,7 +3,8 @@
 -- Loaded after 1_*.lua and 2_*.lua (alphabetical/numeric prefix order).
 -- Source: .planning/phases/01-foundation/01-RESEARCH.md Patterns 3 & 4
 -- IMPORTANT: B42 events are OnZombieDead (singular) and OnWeaponHitXp.
--- The plural-form name and OnWeaponHitCharacter from reference/events.md DO NOT EXIST in B42.
+-- The plural-form zombie-event name and the legacy weapon-hit-character event from
+-- reference/events.md DO NOT EXIST in B42 — use the names above instead.
 
 -- ── CORE-03: Zombie kill -> reduce sanity by ZOMBIE_WEIGHT ───────────────────
 -- OnZombieDead fires once per zombie death; in singleplayer the attacker is getPlayer().
@@ -21,3 +22,26 @@ local function onZombieDead(zed)
 end
 
 Events.OnZombieDead.Add(onZombieDead)
+
+-- ── CORE-04: Survivor (non-zombie) kill -> reduce sanity by SURVIVOR_WEIGHT ───
+-- OnWeaponHitXp fires for every weapon hit; we filter for non-zombie targets that just died.
+-- Source: ProjectZomboid/media/lua/server/XpSystem/XpUpdate.lua:48 (signature)
+-- Source: ProjectZomboid/media/lua/shared/Items/OnBreak.lua:62 (instanceof IsoZombie pattern)
+-- Pitfall 3 (RESEARCH.md): multi-hit edge case; in singleplayer Phase 1 scope this is acceptable.
+local function onWeaponHitXp(owner, weapon, hitObject, damage, hitCount)
+    if not owner or not hitObject then return end
+
+    -- Filter: target is NOT a zombie (zombies are CORE-03's territory) AND just died from this hit
+    if instanceof(hitObject, "IsoZombie") then return end
+    if not hitObject:isDead() then return end
+
+    local md = owner:getModData()
+    if not md.SanityTraits then return end  -- guard: ModData not yet initialized
+
+    local before = md.SanityTraits.sanity
+    md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - SanityTraits.SURVIVOR_WEIGHT)
+    print(SanityTraits.LOG_TAG .. " Survivor killed. Sanity: " .. tostring(before)
+        .. " -> " .. tostring(md.SanityTraits.sanity))
+end
+
+Events.OnWeaponHitXp.Add(onWeaponHitXp)
