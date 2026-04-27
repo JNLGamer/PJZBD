@@ -10,8 +10,8 @@
 
 ### CORE — Sanity Meter
 
-- [ ] **CORE-01**: Player has an invisible sanity meter (0–1000) stored in `player:getModData()`, initialized on `OnCreatePlayer` and persisted automatically with the save file
-- [ ] **CORE-02**: Sanity meter starts at a value determined by the player's occupation archetype (e.g. Veteran starts low/near-desensitized, Unemployed starts at full 1000)
+- [x] **CORE-01**: Player has an invisible sanity meter (0–1000) stored in `player:getModData()`, initialized on `OnCreatePlayer` and persisted automatically with the save file
+- [x] **CORE-02**: Sanity meter starts at a value determined by the player's occupation archetype (e.g. Veteran starts low/near-desensitized, Unemployed starts at full 1000)
 - [ ] **CORE-03**: Killing a zombie reduces the sanity meter by a configurable base amount
 - [ ] **CORE-04**: Killing a survivor or NPC reduces the sanity meter by a heavier configurable amount (default: 3× zombie weight)
 - [ ] **CORE-05**: The sanity meter passively decays over time (configurable rate) via `Events.EveryTenMinutes`
@@ -80,8 +80,8 @@
 
 | REQ-ID | Roadmap Phase | Status |
 |--------|---------------|--------|
-| CORE-01 | Phase 1: Foundation | Pending |
-| CORE-02 | Phase 1: Foundation | Pending |
+| CORE-01 | Phase 1: Foundation | Complete |
+| CORE-02 | Phase 1: Foundation | Complete |
 | CORE-03 | Phase 1: Foundation | Pending |
 | CORE-04 | Phase 1: Foundation | Pending |
 | CORE-05 | Phase 3: Timed Decay and Recovery | Pending |

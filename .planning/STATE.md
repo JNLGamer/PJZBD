@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md (mod skeleton + namespace bootstrap)
-last_updated: "2026-04-27T22:33:06.610Z"
+stopped_at: Completed 01-02-PLAN.md (sanity meter ModData init + profession lookup)
+last_updated: "2026-04-27T22:38:07.793Z"
 last_activity: 2026-04-27
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01 (foundation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-27
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 1m | 2 tasks | 2 files |
+| Phase 01-foundation P02 | 1m 42s | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: Set pzversion=42.0 (not 41.78 from example template) — Build 964 is B42
 - [Phase 01-foundation]: ZOMBIE_WEIGHT=10, SURVIVOR_WEIGHT=30 hardcoded as defaults; Phase 6 will replace with SandboxVars
 - [Phase 01-foundation]: Numeric prefix '1_' on bootstrap file enforces alphabetical load order before later 2_/3_ scripts
+- [Phase 01-foundation]: ModData init via Events.OnCreatePlayer with idempotent guard — handles new and loaded characters with one handler
+- [Phase 01-foundation]: Cache profession id in md.SanityTraits.profession — Phase 4 reads it without re-querying descriptor (Pitfall 2 mitigation)
+- [Phase 01-foundation]: STARTING_SANITY_BY_PROFESSION seeded with 7 archetype entries in Phase 1; Phase 4 will extend to all 24 vanilla professions
 
 ### Pending Todos
 
@@ -81,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T22:33:06.606Z
-Stopped at: Completed 01-01-PLAN.md (mod skeleton + namespace bootstrap)
+Last session: 2026-04-27T22:38:07.789Z
+Stopped at: Completed 01-02-PLAN.md (sanity meter ModData init + profession lookup)
 Resume file: None

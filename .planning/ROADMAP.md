@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Killing a survivor reduces `modData.sanity` by the heavier survivor weight; the value is persisted after save/reload
 **Plans**: 3 plans
   - [x] 01-01-PLAN.md — Mod skeleton, mod.info, namespace bootstrap (DEF-04)
-  - [ ] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
+  - [x] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
   - [ ] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
 
 ### Phase 2: Stage Transitions
