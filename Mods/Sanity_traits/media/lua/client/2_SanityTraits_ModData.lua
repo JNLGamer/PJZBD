@@ -20,3 +20,35 @@ function SanityTraits.getStartingSanity(profName)
     if profName == nil then return SanityTraits.SANITY_MAX end
     return SanityTraits.STARTING_SANITY_BY_PROFESSION[profName] or SanityTraits.SANITY_MAX
 end
+
+-- OnCreatePlayer handler — initializes per-character SanityTraits ModData (CORE-01, CORE-02)
+-- Fires for BOTH new characters and loaded saves; the `if md.SanityTraits == nil` guard prevents overwrite on reload.
+-- Source: 01-RESEARCH.md Pattern 2; ProjectZomboid/media/lua/client/ISUI/PlayerData/ISPlayerData.lua:203
+local function onCreatePlayer(playerIndex, player)
+    if not player then return end
+    local md = player:getModData()
+    if md.SanityTraits ~= nil then
+        -- Already initialized (loaded save). Do nothing — preserve persisted sanity.
+        return
+    end
+
+    -- Pitfall 2 guard: getCharacterProfession() can be nil very early in character creation
+    local profName = nil
+    local desc = player:getDescriptor()
+    if desc and desc:getCharacterProfession() then
+        profName = desc:getCharacterProfession():getName()
+    end
+
+    local startSanity = SanityTraits.getStartingSanity(profName)
+
+    md.SanityTraits = {
+        sanity       = startSanity,
+        appliedStage = "Healthy",
+        profession   = profName or "unknown",
+    }
+
+    print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
+        .. " startingSanity=" .. tostring(startSanity))
+end
+
+Events.OnCreatePlayer.Add(onCreatePlayer)
