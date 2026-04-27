@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 01-01-PLAN.md (mod skeleton + namespace bootstrap)
+last_updated: "2026-04-27T22:33:06.610Z"
+last_activity: 2026-04-27
+progress:
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -5,20 +21,21 @@
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** A character's sanity must visibly decay with realistic occupation-specific flavor, culminating in permanent trait consequences that feel earned and irreversible.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 01 — foundation
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-04-27 — Roadmap created, all 31 v1 requirements mapped across 7 phases
+Phase: 01 (foundation) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-27
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: —
 - Total execution time: —
@@ -30,10 +47,12 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: —
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-foundation P01 | 1m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -47,6 +66,9 @@ Recent decisions affecting current work:
 - Trauma is permanent — no recovery path once entered
 - Sandbox-configurable thresholds — players can tune pacing without touching code
 - Occupation archetypes via psyche profile table — centralized, maps cleanly to trait system
+- [Phase 01-foundation]: Set pzversion=42.0 (not 41.78 from example template) — Build 964 is B42
+- [Phase 01-foundation]: ZOMBIE_WEIGHT=10, SURVIVOR_WEIGHT=30 hardcoded as defaults; Phase 6 will replace with SandboxVars
+- [Phase 01-foundation]: Numeric prefix '1_' on bootstrap file enforces alphabetical load order before later 2_/3_ scripts
 
 ### Pending Todos
 
@@ -59,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27
-Stopped at: Roadmap created — ready to plan Phase 1
+Last session: 2026-04-27T22:33:06.606Z
+Stopped at: Completed 01-01-PLAN.md (mod skeleton + namespace bootstrap)
 Resume file: None

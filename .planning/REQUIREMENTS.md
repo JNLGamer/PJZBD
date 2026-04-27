@@ -52,7 +52,7 @@
 - [ ] **DEF-01**: All vanilla-ID traits used by the mod are applied only by their correct B42 IDs (verified: `base:insomniac`, `base:cowardly`, `base:hemophobic`, `base:slowhealer`, `base:weakstomach`, `base:out of shape`, `base:needsmoresleep`, `base:disorganized`, `base:pacifist`, `base:desensitized`, `base:smoker`)
 - [ ] **DEF-02**: Every `add()` call is guarded with `if not player:HasTrait(id)` to prevent double-application
 - [ ] **DEF-03**: Every `remove()` call is guarded with `if player:HasTrait(id)` to prevent no-op errors
-- [ ] **DEF-04**: `mod.info` is present with valid `name`, `id`, `description`, `modversion`, `pzversion` fields
+- [x] **DEF-04**: `mod.info` is present with valid `name`, `id`, `description`, `modversion`, `pzversion` fields
 
 ---
 
@@ -110,4 +110,4 @@
 | DEF-01 | Phase 2: Stage Transitions | Pending |
 | DEF-02 | Phase 2: Stage Transitions | Pending |
 | DEF-03 | Phase 2: Stage Transitions | Pending |
-| DEF-04 | Phase 1: Foundation | Pending |
+| DEF-04 | Phase 1: Foundation | Complete |
