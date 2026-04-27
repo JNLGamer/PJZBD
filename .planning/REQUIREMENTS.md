@@ -78,12 +78,36 @@
 
 ## Traceability
 
-| REQ-ID | Roadmap Phase |
-|--------|---------------|
-| CORE-01 – CORE-02 | Phase 1: Foundation |
-| CORE-03 – CORE-06 | Phase 1: Foundation |
-| CORE-07 | Phase 6: Sandbox Config |
-| STAGE-01 – STAGE-10 | Phase 2: Stage Transitions |
-| OCC-01 – OCC-05 | Phase 4: Occupation Profiles |
-| HABIT-01 – HABIT-05 | Phase 5: Habit Tracking |
-| DEF-01 – DEF-04 | Phase 2 + Phase 7: Polish |
+| REQ-ID | Roadmap Phase | Status |
+|--------|---------------|--------|
+| CORE-01 | Phase 1: Foundation | Pending |
+| CORE-02 | Phase 1: Foundation | Pending |
+| CORE-03 | Phase 1: Foundation | Pending |
+| CORE-04 | Phase 1: Foundation | Pending |
+| CORE-05 | Phase 3: Timed Decay and Recovery | Pending |
+| CORE-06 | Phase 3: Timed Decay and Recovery | Pending |
+| CORE-07 | Phase 6: Sandbox Configuration | Pending |
+| STAGE-01 | Phase 2: Stage Transitions | Pending |
+| STAGE-02 | Phase 2: Stage Transitions | Pending |
+| STAGE-03 | Phase 2: Stage Transitions | Pending |
+| STAGE-04 | Phase 2: Stage Transitions | Pending |
+| STAGE-05 | Phase 2: Stage Transitions | Pending |
+| STAGE-06 | Phase 2: Stage Transitions | Pending |
+| STAGE-07 | Phase 2: Stage Transitions | Pending |
+| STAGE-08 | Phase 2: Stage Transitions | Pending |
+| STAGE-09 | Phase 2: Stage Transitions | Pending |
+| STAGE-10 | Phase 2: Stage Transitions | Pending |
+| OCC-01 | Phase 4: Occupation Profiles | Pending |
+| OCC-02 | Phase 4: Occupation Profiles | Pending |
+| OCC-03 | Phase 4: Occupation Profiles | Pending |
+| OCC-04 | Phase 4: Occupation Profiles | Pending |
+| OCC-05 | Phase 4: Occupation Profiles | Pending |
+| HABIT-01 | Phase 5: Habit Tracking and Addictions | Pending |
+| HABIT-02 | Phase 5: Habit Tracking and Addictions | Pending |
+| HABIT-03 | Phase 5: Habit Tracking and Addictions | Pending |
+| HABIT-04 | Phase 5: Habit Tracking and Addictions | Pending |
+| HABIT-05 | Phase 5: Habit Tracking and Addictions | Pending |
+| DEF-01 | Phase 2: Stage Transitions | Pending |
+| DEF-02 | Phase 2: Stage Transitions | Pending |
+| DEF-03 | Phase 2: Stage Transitions | Pending |
+| DEF-04 | Phase 1: Foundation | Pending |
