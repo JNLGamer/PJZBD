@@ -31,7 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A new character has a `modData.sanity` value set to the correct starting number (e.g. 1000 for Unemployed)
   3. Killing a zombie reduces `modData.sanity` by the configured zombie weight; console logging confirms the event fired
   4. Killing a survivor reduces `modData.sanity` by the heavier survivor weight; the value is persisted after save/reload
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 01-01-PLAN.md — Mod skeleton, mod.info, namespace bootstrap (DEF-04)
+  - [ ] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
+  - [ ] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
 
 ### Phase 2: Stage Transitions
 **Goal**: Characters progress through all four deterioration stages with correct traits applied and removed, with no double-application
@@ -103,7 +106,7 @@ Note: Phases 3 and 4 both depend on Phase 1/2 respectively and can be planned in
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/3 | Planned | - |
 | 2. Stage Transitions | 0/TBD | Not started | - |
 | 3. Timed Decay and Recovery | 0/TBD | Not started | - |
 | 4. Occupation Profiles | 0/TBD | Not started | - |
