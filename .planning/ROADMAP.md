@@ -36,6 +36,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [x] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
   - [x] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
 
+### Phase 01.1: Sanity Tab UI (INSERTED)
+
+**Goal:** Add a visible "Psyche" tab to ISCharacterInfoWindow surfacing the previously-invisible sanity meter built in Phase 1; the tab contains a sanity bar with stage threshold ticks and numeric readout, a thematic stage label, a 50-entry persisted event log, and a 6-slot debuff icon row. Locks in the STAGE_THRESHOLDS and STAGE_NAMES tables that Phase 2 will reuse.
+**Requirements**: None (inserted post-requirements-lock; CONTEXT decisions D-01..D-23 are the source of truth)
+**Depends on:** Phase 1
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01.1-01-PLAN.md — Constants and ModData upgrade: STAGE_THRESHOLDS, STAGE_NAMES, computeStage, idempotent log/appliedTraits seed (D-08, D-09, D-10, D-11, D-17)
+- [ ] 01.1-02-PLAN.md — Logger API and kill event wiring: SanityTraits.log() in new 4_SanityTraits_Panel.lua, plus updated kill handlers (D-12, D-13, D-14, D-15)
+- [ ] 01.1-03-PLAN.md — SanityPanel class and ISCharacterInfoWindow wrap: bar + ticks + numeric + stage label + event log listbox + 6-slot debuff row (D-01..D-07, D-16, D-18..D-23)
+
 ### Phase 2: Stage Transitions
 **Goal**: Characters progress through all four deterioration stages with correct traits applied and removed, with no double-application
 **Depends on**: Phase 1
@@ -95,7 +107,6 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. A full playthrough from new game through all four stages completes without a single Lua error in the console
   2. All vanilla trait IDs used by the mod (`base:insomniac`, `base:cowardly`, `base:hemophobic`, `base:slowhealer`, `base:weakstomach`, `base:out of shape`, `base:needsmoresleep`, `base:disorganized`, `base:pacifist`, `base:desensitized`, `base:smoker`) are confirmed present in B42 game files
   3. The mod loads correctly when placed in `Mods/Sanity_traits/` and selected from the mod list on a clean install
-**Plans**: TBD
 
 ## Progress
 
