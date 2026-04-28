@@ -1,0 +1,61 @@
+-- Build 42 trait definition example
+-- Place at: media/scripts/characters/mytraits.txt
+
+module Base
+{
+    -- ── Selectable positive trait ──────────────────────────────────────────────
+    character_trait_definition base:mymod_streetwise
+    {
+        IsProfessionTrait       = false,
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = base:mymod_streetwise,
+        Cost                    = 4,         -- player spends 4 points to pick this
+        UIName                  = UI_trait_MyMod_Streetwise,
+        UIDescription           = UI_trait_MyMod_StreetwiseDesc,
+        XPBoosts                = Lightfoot=1;SmallBlade=1,
+        MutuallyExclusiveTraits = base:mymod_sheltered,
+        GrantedRecipes          = MakeShiv;MakeGlassShiv,
+    }
+
+    -- ── Selectable negative trait (earns points) ───────────────────────────────
+    character_trait_definition base:mymod_sheltered
+    {
+        IsProfessionTrait       = false,
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = base:mymod_sheltered,
+        Cost                    = -4,        -- player earns 4 free points
+        UIName                  = UI_trait_MyMod_Sheltered,
+        UIDescription           = UI_trait_MyMod_ShelteredDesc,
+        MutuallyExclusiveTraits = base:mymod_streetwise,
+    }
+
+    -- ── Profession-locked trait (not selectable — given by a profession) ───────
+    -- Naming convention: add suffix like _prof or _2 to distinguish from
+    -- the selectable version, and make them mutually exclusive with each other.
+    character_trait_definition base:mymod_scrounger_prof
+    {
+        IsProfessionTrait       = true,          -- hidden from trait list
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = base:mymod_scrounger_prof,
+        Cost                    = 0,             -- always free
+        UIName                  = UI_trait_MyMod_Scrounger,
+        UIDescription           = UI_trait_MyMod_ScroungerDesc,
+        XPBoosts                = Maintenance=1,
+        MutuallyExclusiveTraits = base:mymod_scrounger,  -- prevent stacking
+        GrantedRecipes          = MakeScrewdriver,
+    }
+
+    -- ── Selectable version of the same trait (optional — if you want both) ─────
+    character_trait_definition base:mymod_scrounger
+    {
+        IsProfessionTrait       = false,
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = base:mymod_scrounger,
+        Cost                    = 3,
+        UIName                  = UI_trait_MyMod_Scrounger,
+        UIDescription           = UI_trait_MyMod_ScroungerDesc,
+        XPBoosts                = Maintenance=1,
+        MutuallyExclusiveTraits = base:mymod_scrounger_prof,
+        GrantedRecipes          = MakeScrewdriver,
+    }
+}
