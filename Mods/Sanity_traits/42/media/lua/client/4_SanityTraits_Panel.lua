@@ -333,3 +333,40 @@ function SanityPanel:render()
         end
     end
 end
+
+-- ── ISCharacterInfoWindow:createChildren wrap (D-01, D-02, D-03) ─────────────
+-- Composability rule: never replace vanilla functions; wrap them.
+-- Pitfall 2: defensive nil guard — if vanilla source somehow loaded later (or
+-- failed to load), refuse to wrap and print an explicit error so the user has
+-- a clear console.txt signal instead of a cryptic "attempt to index a nil value".
+--
+-- Critical Correction 3: ship default ISTabPanel behavior. Vanilla's tab-strip
+-- total-width hint is local to vanilla's :createChildren and inaccessible after
+-- the wrap returns. We do NOT manually resize the panel or the parent window.
+-- ISTabPanel renders built-in scroll arrows when the strip overflows.
+if not ISCharacterInfoWindow then
+    print(SanityTraits.LOG_TAG .. " ERROR: ISCharacterInfoWindow not loaded; cannot install Psyche tab")
+else
+    local origCreateChildren = ISCharacterInfoWindow.createChildren
+    function ISCharacterInfoWindow:createChildren()
+        -- Vanilla creates Info, Skills, Health, Protection, ClothingIns (5 tabs).
+        -- After this call, self.panel exists and has 5 views.
+        origCreateChildren(self)
+
+        -- Build our 6th view. Sized to fit inside the existing panel area.
+        -- Position/size mirrors how vanilla constructs each tab view at lines 127-149.
+        local panelX = 0
+        local panelY = 8
+        local panelW = self.charScreen and self.charScreen.width or self.width
+        local panelH = self.height - 8
+
+        self.sanityView = SanityPanel:new(panelX, panelY, panelW, panelH, self.playerNum)
+        self.sanityView:initialise()
+        -- ISTabPanel:addView internally calls self:addChild(view) which triggers
+        -- our SanityPanel:createChildren() lifecycle. Order matches vanilla's
+        -- tab construction at lines 127-149.
+        self.panel:addView("Psyche", self.sanityView)
+
+        print(SanityTraits.LOG_TAG .. " Psyche tab installed")
+    end
+end
