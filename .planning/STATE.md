@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "01.1-04: Tasks 1-4 complete, awaiting Task 5 human-verify checkpoint"
-last_updated: "2026-04-28T06:14:06.822Z"
+stopped_at: "01.1-05: Tasks 1-4 complete, mod deployed, awaiting Task 5 human-verify checkpoint"
+last_updated: "2026-04-28T07:13:33.633Z"
 last_activity: 2026-04-28 -- Phase 01.1 execution started
 progress:
   total_phases: 8
-  completed_phases: 1
-  total_plans: 7
-  completed_plans: 6
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 8
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.1 (sanity-tab-ui) — EXECUTING
-Plan: 1 of 4
+Plan: 1 of 5
 Status: Executing Phase 01.1
 Last activity: 2026-04-28 -- Phase 01.1 execution started
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.1 P01 | 2m | 2 tasks | 2 files |
 | Phase 01.1 P02 | 2min | 2 tasks | 2 files |
 | Phase 01.1 P03 | 3m 34s | 3 tasks | 1 files |
+| Phase 01.1 P05 | 5m 57s | 4 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,10 @@ Recent decisions affecting current work:
 - [Phase 01.1]: Plan 03: Ship default ISTabPanel behavior — no width adjustment (Critical Correction 3). Vanilla's tab-strip total-width hint is local and inaccessible after wrap; overflow uses built-in scroll arrows.
 - [Phase 01.1]: Plan 03: Cache pattern lastLogCount/lastAppliedCount=-1 in :new so first :render frame always populates the listbox (empty-state placeholder) and debuff row; later frames only rebuild on count change (Pitfall 5)
 - [Phase 01.1]: Plan 03: Procedural fallback rect (drawRect 18x18 + drawRectBorder + last char of traitId) drawn in :render on top of the ISImage slot when TraitFactory texture is nil — keeps debuff layout invariant (Pitfall 1 mitigation)
+- [Phase 01.1]: Plan 05: barW 14->18 + BAR_BORDER 0.6 + parametric logW (GAP-05) — bar legibility polish, layout invariant self-documenting
+- [Phase 01.1]: Plan 05: logY 54->62 + 1px y=50 header divider (GAP-03) — UIFont.Medium descender clearance
+- [Phase 01.1]: Plan 05: listbox bgcolor opaque dark grey + drawBorder=true vanilla flag (GAP-04) — verified ISScrollingListBox.lua:484 supports drawBorder; default borderColor matches panel style, no override needed
+- [Phase 01.1]: Plan 05: CONTEXT.md NOT mutated — D-01..D-23 remain history-of-decisions; UI-SPEC.md alone carries Plan 05 amendments with explicit GAP-03/04/05 provenance (same pattern Plan 04 used)
 
 ### Pending Todos
 
@@ -107,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T06:14:06.816Z
-Stopped at: 01.1-04: Tasks 1-4 complete, awaiting Task 5 human-verify checkpoint
+Last session: 2026-04-28T07:13:33.627Z
+Stopped at: 01.1-05: Tasks 1-4 complete, mod deployed, awaiting Task 5 human-verify checkpoint
 Resume file: None
