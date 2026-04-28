@@ -137,3 +137,199 @@ function SanityPanel:createChildren()
         self.debuffSlots[i] = img
     end
 end
+
+-- ── Format helpers (private to this file) ────────────────────────────────────
+
+-- Format a log entry table into the listbox display string per UI-SPEC:
+--   "D{day} {HH:MM} - {text} ({signedDelta})"
+-- The delta is rendered in parens with a sign only when non-nil; otherwise omitted.
+-- Time prefix is computed at render-time from getGameTime() (not from entry.time —
+-- that ms timestamp is just for sort/dedup integrity, not display).
+local function formatLogEntryDisplay(entry)
+    local gt = getGameTime()
+    local day  = gt and gt:getDay()     or 0
+    local hour = gt and gt:getHour()    or 0
+    local min  = gt and gt:getMinutes() or 0
+    local prefix = string.format("D%d %02d:%02d", day, hour, min)
+    if entry.delta then
+        local sign = entry.delta >= 0 and "+" or ""
+        return prefix .. " - " .. entry.text .. " (" .. sign .. tostring(entry.delta) .. ")"
+    else
+        return prefix .. " - " .. entry.text
+    end
+end
+
+-- TraitFactory icon lookup with nil guard. Critical Correction 1 / Pitfall 1:
+-- vanilla does NOT ship Trait_<id>.png for our negative traits (cowardly,
+-- hemophobic, etc.). Use trait:getTexture() instead — the same call vanilla
+-- uses at ISCharacterScreen.lua:606. Returns the trait Java object alongside
+-- the texture so the caller can also use trait:getLabel() / trait:getDescription().
+local function getTraitTextureSafe(traitId)
+    local trait = TraitFactory.getTrait(traitId)
+    if trait then return trait, trait:getTexture() end
+    return nil, nil
+end
+
+-- ── Sanity bar with 3-stop gradient + threshold ticks (D-05, D-07) ───────────
+-- Gradient interpolation rule per UI-SPEC:
+--   pct < 0.5: r=1, g=(pct/0.5), b=0   (red lerps to yellow)
+--   pct >=0.5: r=1-((pct-0.5)/0.5), g=1, b=0   (yellow lerps to green)
+function SanityPanel:drawSanityBar(x, y, w, h, sanity, sanityMax)
+    local pct = sanity / sanityMax   -- 0..1
+
+    -- Background track (BAR_TRACK)
+    self:drawRect(x, y, w, h, 1, 0.1, 0.1, 0.1)
+
+    -- Foreground gradient: red (0) -> yellow (0.5) -> green (1)
+    local r, g, b
+    if pct < 0.5 then
+        local t = pct / 0.5
+        r, g, b = 1.0, t, 0.0
+    else
+        local t = (pct - 0.5) / 0.5
+        r, g, b = 1.0 - t, 1.0, 0.0
+    end
+    self:drawRect(x, y, w * pct, h, 1, r, g, b)
+
+    -- Border (BAR_BORDER)
+    self:drawRectBorder(x, y, w, h, 1, 0.4, 0.4, 0.4)
+
+    -- D-07: 4 always-visible threshold ticks (1px each, off-white)
+    local th = SanityTraits.STAGE_THRESHOLDS
+    local thresholds = { th.sad, th.depressed, th.traumatized, th.desensitized }
+    for _, threshold in ipairs(thresholds) do
+        local tx = x + math.floor(w * (threshold / sanityMax))
+        self:drawRect(tx, y, 1, h, 1, 0.9, 0.9, 0.9)
+    end
+end
+
+-- ── Listbox refresh (Pitfall 5: only rebuild when #log changed) ──────────────
+-- The listbox is a DERIVED VIEW of md.SanityTraits.log (the source array). FIFO
+-- eviction is performed on the source array by SanityTraits.log() (Plan 02);
+-- here we just rebuild from the array when its count differs from our cache.
+function SanityPanel:refreshLogList(md)
+    local logArr = md and md.log or nil
+    local cur = (logArr and #logArr) or 0
+    if cur == self.lastLogCount then return end
+
+    self.eventLog:clear()
+
+    if cur == 0 then
+        -- Empty-state placeholder per UI-SPEC Empty State / Copywriting Contract.
+        -- Backing item is nil (we never need to look it up).
+        self.eventLog:addItem("No events yet.", nil, nil)
+    else
+        -- newest at index 1; iterate in order so display preserves "newest at top"
+        for i = 1, #logArr do
+            local entry = logArr[i]
+            local label = formatLogEntryDisplay(entry)
+            self.eventLog:addItem(label, entry, nil)
+        end
+    end
+
+    self.lastLogCount = cur
+end
+
+-- ── Debuff row refresh (Pitfall 5 + Critical Correction 1 + Critical Correction 2) ──
+-- Cache pattern: only rebuild when #appliedTraits differs from lastAppliedCount.
+-- Icon source: TraitFactory.getTrait(id):getTexture() (Critical Correction 1).
+-- Tooltip: ISImage:setMouseOverText with "\n" line breaks (Critical Correction 2).
+function SanityPanel:refreshDebuffRow(md)
+    local arr = md and md.appliedTraits or nil
+    local cur = (arr and #arr) or 0
+    if cur == self.lastAppliedCount then return end
+
+    for i = 1, SanityTraits.DEBUFF_SLOT_COUNT do
+        local slot  = self.debuffSlots[i]
+        local entry = arr and arr[i] or nil
+        if entry then
+            slot.traitId = entry.traitId
+            local trait, tex = getTraitTextureSafe(entry.traitId)
+
+            if tex then
+                slot.texture     = tex
+                slot.useFallback = false
+            else
+                slot.texture     = nil
+                slot.useFallback = true   -- :render will draw the procedural rect on top
+            end
+
+            -- Tooltip (D-19): 3 lines via "\n", per Critical Correction 2 (setMouseOverText).
+            -- Line 1: trait label, Line 2: trait description, blank line, then attribution.
+            local stageKey  = entry.appliedAtStage or "stable"
+            local stageName = SanityTraits.STAGE_NAMES[stageKey] or stageKey
+            local label = (trait and trait:getLabel())       or entry.traitId
+            local desc  = (trait and trait:getDescription()) or ""
+            local tipText = label .. "\n" .. desc .. "\n\nApplied by Sanity Traits at " .. stageName
+            slot:setMouseOverText(tipText)
+
+            slot:setVisible(true)
+        else
+            slot.traitId     = nil
+            slot.texture     = nil
+            slot.useFallback = false
+            slot:setMouseOverText("")
+            slot:setVisible(false)
+        end
+    end
+
+    self.lastAppliedCount = cur
+end
+
+-- ── Lifecycle render hooks ───────────────────────────────────────────────────
+
+function SanityPanel:prerender()
+    ISPanelJoypad.prerender(self)   -- inherited bg draw
+end
+
+-- Per-frame redraw (D-20). Re-reads md.SanityTraits each call — no event subscription,
+-- no polling. Listbox + debuff row only rebuild when their cached counts changed.
+function SanityPanel:render()
+    -- Re-acquire player if it was nil at construction (Pitfall 6 mitigation)
+    if not self.char then
+        self.char = getSpecificPlayer(self.playerNum)
+        if not self.char then return end
+    end
+
+    local md = self.char:getModData().SanityTraits
+    if not md then return end   -- Plan 01 ModData not yet seeded (shouldn't happen post-OnCreatePlayer)
+
+    -- ── Header: bar + numeric readout + stage label ──
+    local barX, barY, barH = 10, 10, 14
+    local readoutW = 110   -- reserve right-side width for "999 / 1000 (100%)" text
+    local barW = self.width - 20 - readoutW
+    local sanity = md.sanity or 0
+    local sanityMax = SanityTraits.SANITY_MAX
+
+    self:drawSanityBar(barX, barY, barW, barH, sanity, sanityMax)
+
+    -- D-06 numeric readout EXACTLY in format "%d / %d (%d%%)"
+    local pct = math.floor((sanity / sanityMax) * 100)
+    local readout = string.format("%d / %d (%d%%)", sanity, sanityMax, pct)
+    self:drawText(readout, barX + barW + 8, barY, 1, 1, 1, 1, UIFont.Small)
+
+    -- D-09 stage label "Stage: <thematic>"
+    local stageKey  = SanityTraits.computeStage(sanity)
+    local stageName = SanityTraits.STAGE_NAMES[stageKey] or stageKey
+    self:drawText("Stage: " .. stageName, barX, barY + barH + 4, 1, 1, 1, 1, UIFont.Medium)
+
+    -- ── Refresh listbox + debuff row only when their counts changed ──
+    self:refreshLogList(md)
+    self:refreshDebuffRow(md)
+
+    -- ── Procedural fallback rect for any debuff slot whose trait texture is nil ──
+    -- Pitfall 1 mitigation. We draw on top of the ISImage's slot position; the ISImage
+    -- itself shows nothing (texture=nil) when useFallback is true, so painting our rect
+    -- over its position is correct and complete.
+    for i = 1, SanityTraits.DEBUFF_SLOT_COUNT do
+        local slot = self.debuffSlots[i]
+        if slot:isVisible() and slot.useFallback and slot.traitId then
+            local sx = slot:getX()
+            local sy = slot:getY()
+            self:drawRect(sx, sy, 18, 18, 1, 0.3, 0.3, 0.3)
+            self:drawRectBorder(sx, sy, 18, 18, 1, 0.6, 0.6, 0.6)
+            -- last char of traitId, drawn at small offset
+            self:drawText(string.sub(slot.traitId, -1), sx + 6, sy + 1, 1, 1, 1, 1, UIFont.Small)
+        end
+    end
+end
