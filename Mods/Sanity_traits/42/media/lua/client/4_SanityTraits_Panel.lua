@@ -109,7 +109,9 @@ function SanityPanel:createChildren()
     local logY = 54   -- below header (bar y=10 + barH=14 + 4 gap + stage label ~18 + 8 = ~54)
     local debuffRowY = self.height - 24 - 10   -- 24 = slotSize, 10 = bottom margin
     local logH = math.max(40, debuffRowY - logY - 8)
-    local logW = self.width - 20
+    -- GAP-01 closure (Plan 01.1-04): subtract 32px reserved for right-edge bar column
+    -- (14 bar width + 10 right margin + 8 gap between log and bar).
+    local logW = self.width - 20 - 32
 
     self.eventLog = ISScrollingListBox:new(logX, logY, logW, logH)
     self.eventLog:initialise()
