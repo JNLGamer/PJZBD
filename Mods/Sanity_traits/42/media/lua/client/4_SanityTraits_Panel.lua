@@ -106,18 +106,26 @@ function SanityPanel:createChildren()
     -- CRITICAL Pitfall 4: lifecycle order is :new -> :initialise -> :instantiate -> setFont -> addChild.
     -- Skipping :instantiate breaks the scrollbar (Java-side UIElement never created).
     local logX = 10
-    local logY = 54   -- below header (bar y=10 + barH=14 + 4 gap + stage label ~18 + 8 = ~54)
+    local logY = 62   -- GAP-03 closure (Plan 01.1-05): below header with +8px clearance for UIFont.Medium stage label descender (was 54; user observed clipped 'g' in 'Stage: Stable')
     local debuffRowY = self.height - 24 - 10   -- 24 = slotSize, 10 = bottom margin
     local logH = math.max(40, debuffRowY - logY - 8)
-    -- GAP-01 closure (Plan 01.1-04): subtract 32px reserved for right-edge bar column
-    -- (14 bar width + 10 right margin + 8 gap between log and bar).
-    local logW = self.width - 20 - 32
+    -- GAP-05 closure (Plan 01.1-05): logW formula is now parametric on barW.
+    -- (barW + 18) where 18 = 10 right margin + 8 gap between log and bar.
+    -- At barW=18 this is self.width - 20 - 36 (Plan 04 hardcoded 32 for barW=14).
+    -- Keeping the formula parametric so future barW tweaks don't drift logW out of sync.
+    local logW = self.width - 20 - (18 + 18)
 
     self.eventLog = ISScrollingListBox:new(logX, logY, logW, logH)
     self.eventLog:initialise()
     self.eventLog:instantiate()                  -- REQUIRED — Pitfall 4
     self.eventLog:setFont(UIFont.Small, 4)        -- 4 = itemPadY per UI-SPEC
-    self.eventLog.backgroundColor = {r=0, g=0, b=0, a=0.4}
+    -- GAP-04 closure (Plan 01.1-05): opaque slightly-lighter dark grey for visible contrast
+    -- against panel bg {r=0,g=0,b=0,a=0.8}. Was {r=0,g=0,b=0,a=0.4} which blended invisibly.
+    self.eventLog.backgroundColor = {r=0.08, g=0.08, b=0.08, a=1}
+    -- GAP-04 closure (Plan 01.1-05): vanilla ISScrollingListBox built-in 1px border render.
+    -- Verified at ProjectZomboid/media/lua/client/ISUI/ISScrollingListBox.lua line 484; default
+    -- borderColor = {r=0.4, g=0.4, b=0.4, a=0.9} (line 707) matches our panel-border visual style.
+    self.eventLog.drawBorder = true
     self:addChild(self.eventLog)
 
     -- ── Debuff icon row (D-16): 6 reserved slots, all initially hidden ───────
@@ -361,6 +369,12 @@ function SanityPanel:render()
     local stageKey  = SanityTraits.computeStage(sanity)
     local stageName = SanityTraits.STAGE_NAMES[stageKey] or stageKey
     self:drawText("Stage: " .. stageName, stageX, stageY, 1, 1, 1, 1, UIFont.Medium)
+
+    -- GAP-03 closure (Plan 01.1-05): 1px horizontal divider between header and event log.
+    -- Y=50 sits between stage label glyph bottom (~48) and logY (62). Color matches panel
+    -- border {r=0.4,g=0.4,b=0.4} for visual consistency. Width parametric on barW so the
+    -- divider stops at the listbox's right edge (does not extend under the bar column).
+    self:drawRect(10, 50, self.width - 20 - (barW + 18), 1, 1, 0.4, 0.4, 0.4)
 
     -- ── Refresh listbox + debuff row only when their counts changed ──
     self:refreshLogList(md)
