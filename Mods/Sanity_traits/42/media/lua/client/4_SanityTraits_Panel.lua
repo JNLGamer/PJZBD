@@ -238,7 +238,7 @@ function SanityPanel:drawSanityBar(x, y, w, h, sanity, sanityMax)
     end
 
     -- ── Pass 4: Border (drawn last, sits over gradient + mask + ticks) ──
-    self:drawRectBorder(x, y, w, h, 1, 0.4, 0.4, 0.4)   -- BAR_BORDER
+    self:drawRectBorder(x, y, w, h, 1, 0.6, 0.6, 0.6)   -- BAR_BORDER (lightened in Plan 05 / GAP-05 for contrast against panel border {r=0.4,g=0.4,b=0.4})
 end
 
 -- ── Listbox refresh (Pitfall 5: only rebuild when #log changed) ──────────────
@@ -341,7 +341,7 @@ function SanityPanel:render()
     -- Vertical bar pinned to right edge: 14px wide column with 10px right margin.
     -- Bar height fills panel vertical space minus top margin (10), debuff row size (24),
     -- bottom margin (10), and a 4px gap above the debuff row = 48px reserved.
-    local barW = 14
+    local barW = 18
     local barX = self.width - barW - 10
     local barY = 10
     local barH = math.max(40, self.height - 48)
