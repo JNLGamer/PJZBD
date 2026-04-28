@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 01.1-01-PLAN.md (data foundation: stage constants + ModData upgrade)"
-last_updated: "2026-04-28T02:59:29.812Z"
+stopped_at: Completed 01.1-02-PLAN.md (logger API + kill-handler integration)
+last_updated: "2026-04-28T03:06:36.876Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.1 (sanity-tab-ui) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P02 | 1m 42s | 2 tasks | 1 files |
 | Phase 01-foundation P03 | 2m 13s | 3 tasks | 1 files |
 | Phase 01.1 P01 | 2m | 2 tasks | 2 files |
+| Phase 01.1 P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 01.1]: STAGE_NAMES use thematic player-facing labels (Stable/Shaken/Hollow/Numb/Broken) per D-09; trait IDs remain unchanged
 - [Phase 01.1]: computeStage() uses <= with desensitized-first ordering so boundary value 50 returns 'broken' (lower stage); Phase 2 reuses this same helper for transitions
 - [Phase 01.1]: OnCreatePlayer refactored to upgrade-aware: explicit if/else replaces early-return; loaded saves get log={} and appliedTraits={} added idempotently per-field (Phase 1 -> 01.1 migration, no schema-version counter needed)
+- [Phase 01.1]: Plan 02: SanityTraits.log API shipped in 4_SanityTraits_Panel.lua — single recording surface for kill/stage/trait/recovery events. Whitelist-validated category, FIFO at 50 on source array via table.remove(t) (Pitfall 3 mitigation), newest-at-index-1.
+- [Phase 01.1]: Plan 02: Phase 1 kill handlers extended additively — existing math.max decrement and console print preserved verbatim, logger call added below each. Strings 'Zombie killed' / 'Survivor killed' locked per UI-SPEC Copywriting Contract; deltas signed-negative metadata for the UI.
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T02:59:29.807Z
-Stopped at: Completed 01.1-01-PLAN.md (data foundation: stage constants + ModData upgrade)
+Last session: 2026-04-28T03:06:36.871Z
+Stopped at: Completed 01.1-02-PLAN.md (logger API + kill-handler integration)
 Resume file: None
