@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01.1-02-PLAN.md (logger API + kill-handler integration)
-last_updated: "2026-04-28T03:06:36.876Z"
+status: verifying
+stopped_at: Completed 01.1-03-PLAN.md (SanityPanel class + ISCharacterInfoWindow wrap; phase ready for verification)
+last_updated: "2026-04-28T03:17:10.624Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 
 Phase: 01.1 (sanity-tab-ui) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-28
 
 Progress: [░░░░░░░░░░] 0%
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P03 | 2m 13s | 3 tasks | 1 files |
 | Phase 01.1 P01 | 2m | 2 tasks | 2 files |
 | Phase 01.1 P02 | 2min | 2 tasks | 2 files |
+| Phase 01.1 P03 | 3m 34s | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,11 @@ Recent decisions affecting current work:
 - [Phase 01.1]: OnCreatePlayer refactored to upgrade-aware: explicit if/else replaces early-return; loaded saves get log={} and appliedTraits={} added idempotently per-field (Phase 1 -> 01.1 migration, no schema-version counter needed)
 - [Phase 01.1]: Plan 02: SanityTraits.log API shipped in 4_SanityTraits_Panel.lua — single recording surface for kill/stage/trait/recovery events. Whitelist-validated category, FIFO at 50 on source array via table.remove(t) (Pitfall 3 mitigation), newest-at-index-1.
 - [Phase 01.1]: Plan 02: Phase 1 kill handlers extended additively — existing math.max decrement and console print preserved verbatim, logger call added below each. Strings 'Zombie killed' / 'Survivor killed' locked per UI-SPEC Copywriting Contract; deltas signed-negative metadata for the UI.
+- [Phase 01.1]: Plan 03: TraitFactory.getTrait(id):getTexture() (NOT path-based getTexture for Trait_<id>.png) — Critical Correction 1 from RESEARCH overrides D-18; vanilla ships no negative-trait PNGs
+- [Phase 01.1]: Plan 03: ISImage:setMouseOverText for the debuff tooltip (NOT manual ISToolTip instantiation) — Critical Correction 2; matches vanilla ISCharacterScreen.lua:608 pattern
+- [Phase 01.1]: Plan 03: Ship default ISTabPanel behavior — no width adjustment (Critical Correction 3). Vanilla's tab-strip total-width hint is local and inaccessible after wrap; overflow uses built-in scroll arrows.
+- [Phase 01.1]: Plan 03: Cache pattern lastLogCount/lastAppliedCount=-1 in :new so first :render frame always populates the listbox (empty-state placeholder) and debuff row; later frames only rebuild on count change (Pitfall 5)
+- [Phase 01.1]: Plan 03: Procedural fallback rect (drawRect 18x18 + drawRectBorder + last char of traitId) drawn in :render on top of the ISImage slot when TraitFactory texture is nil — keeps debuff layout invariant (Pitfall 1 mitigation)
 
 ### Pending Todos
 
@@ -101,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T03:06:36.871Z
-Stopped at: Completed 01.1-02-PLAN.md (logger API + kill-handler integration)
+Last session: 2026-04-28T03:16:50.671Z
+Stopped at: Completed 01.1-03-PLAN.md (SanityPanel class + ISCharacterInfoWindow wrap; phase ready for verification)
 Resume file: None
