@@ -170,37 +170,73 @@ local function getTraitTextureSafe(traitId)
     return nil, nil
 end
 
--- ── Sanity bar with 3-stop gradient + threshold ticks (D-05, D-07) ───────────
--- Gradient interpolation rule per UI-SPEC:
---   pct < 0.5: r=1, g=(pct/0.5), b=0   (red lerps to yellow)
---   pct >=0.5: r=1-((pct-0.5)/0.5), g=1, b=0   (yellow lerps to green)
+-- ── Sanity bar: vertical orientation, always-on gradient, track-mask fill ────
+-- GAP-01/GAP-02 closure (Plan 01.1-04). Amends D-05 and D-21 visual contract.
+--
+-- Render passes (in this order):
+--   1. Gradient backdrop: ALWAYS render the full bar as 10 horizontal bands
+--      lerping green->yellow->red from TOP to BOTTOM. The gradient is permanent
+--      and never changes shape with sanity. (GAP-02 fix.)
+--   2. Track mask: paint the empty TOP portion (height = (1 - pct) * h) with
+--      BAR_TRACK dark grey. This hides the gradient where sanity is "drained."
+--      The remaining bottom portion (height = pct * h) shows the gradient.
+--      This is the FILL: bottom-up, anchored at the red end. (GAP-02 fix.)
+--   3. Threshold ticks: 4 horizontal 1px lines spanning the bar's full width
+--      at proportional Y positions along the bar. Higher threshold = nearer top
+--      (since high sanity = top of bar). Always visible, drawn OVER the
+--      track-mask so they remain visible in empty portions. (D-07 preserved.)
+--   4. Border: drawn last so it sits over everything.
+--
+-- The function accepts arbitrary x/y/w/h so it works regardless of where the
+-- caller positions the bar. Callers (only :render in this file) pass the
+-- right-edge column coordinates (Task 2 sets barX = self.width - 14 - 10 etc.).
 function SanityPanel:drawSanityBar(x, y, w, h, sanity, sanityMax)
-    local pct = sanity / sanityMax   -- 0..1
+    local pct = sanity / sanityMax    -- 0..1
+    if pct < 0 then pct = 0 end
+    if pct > 1 then pct = 1 end
 
-    -- Background track (BAR_TRACK)
-    self:drawRect(x, y, w, h, 1, 0.1, 0.1, 0.1)
-
-    -- Foreground gradient: red (0) -> yellow (0.5) -> green (1)
-    local r, g, b
-    if pct < 0.5 then
-        local t = pct / 0.5
-        r, g, b = 1.0, t, 0.0
-    else
-        local t = (pct - 0.5) / 0.5
-        r, g, b = 1.0 - t, 1.0, 0.0
+    -- ── Pass 1: Always-on gradient backdrop (10 bands, GREEN at TOP -> RED at BOTTOM) ──
+    local BAND_COUNT = 10
+    local bandH = h / BAND_COUNT
+    for band = 1, BAND_COUNT do
+        local bandPct = (band - 0.5) / BAND_COUNT   -- 0..1, top->bottom centroid
+        local r, g, b
+        if bandPct < 0.5 then
+            -- green to yellow: r climbs 0->1, g stays 1
+            local t = bandPct / 0.5
+            r, g, b = t, 1.0, 0.0
+        else
+            -- yellow to red: r stays 1, g drops 1->0
+            local t = (bandPct - 0.5) / 0.5
+            r, g, b = 1.0, 1.0 - t, 0.0
+        end
+        -- Use ceil for the last band to avoid sub-pixel gap at the bottom edge
+        local bandY = y + math.floor((band - 1) * bandH)
+        local thisBandH = (band == BAND_COUNT) and (y + h - bandY) or math.ceil(bandH)
+        self:drawRect(x, bandY, w, thisBandH, 1, r, g, b)
     end
-    self:drawRect(x, y, w * pct, h, 1, r, g, b)
 
-    -- Border (BAR_BORDER)
-    self:drawRectBorder(x, y, w, h, 1, 0.4, 0.4, 0.4)
+    -- ── Pass 2: Track mask over the empty TOP portion (fill from BOTTOM) ──
+    -- emptyH = how much of the top is "drained." pct=1 -> emptyH=0 (full bar visible);
+    -- pct=0 -> emptyH=h (no gradient visible, only dark track); pct=0.5 -> emptyH=h/2.
+    local emptyH = math.floor(h * (1 - pct))
+    if emptyH > 0 then
+        self:drawRect(x, y, w, emptyH, 1, 0.1, 0.1, 0.1)   -- BAR_TRACK dark grey
+    end
 
-    -- D-07: 4 always-visible threshold ticks (1px each, off-white)
+    -- ── Pass 3: 4 always-visible threshold ticks (D-07 preserved, rotated 90°) ──
+    -- Tick = 1px-tall horizontal line spanning the bar's full width.
+    -- High threshold (750=sad) sits near TOP; low threshold (50=desensitized) near BOTTOM.
+    -- Drawn AFTER track mask so ticks remain visible even in the empty portion.
     local th = SanityTraits.STAGE_THRESHOLDS
     local thresholds = { th.sad, th.depressed, th.traumatized, th.desensitized }
     for _, threshold in ipairs(thresholds) do
-        local tx = x + math.floor(w * (threshold / sanityMax))
-        self:drawRect(tx, y, 1, h, 1, 0.9, 0.9, 0.9)
+        local tickY = y + h - math.floor(h * (threshold / sanityMax))
+        self:drawRect(x, tickY, w, 1, 1, 0.9, 0.9, 0.9)   -- TICK_COLOR off-white
     end
+
+    -- ── Pass 4: Border (drawn last, sits over gradient + mask + ticks) ──
+    self:drawRectBorder(x, y, w, h, 1, 0.4, 0.4, 0.4)   -- BAR_BORDER
 end
 
 -- ── Listbox refresh (Pitfall 5: only rebuild when #log changed) ──────────────
