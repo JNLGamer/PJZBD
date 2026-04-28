@@ -330,24 +330,35 @@ function SanityPanel:render()
     local md = self.char:getModData().SanityTraits
     if not md then return end   -- Plan 01 ModData not yet seeded (shouldn't happen post-OnCreatePlayer)
 
-    -- ── Header: bar + numeric readout + stage label ──
-    local barX, barY, barH = 10, 10, 14
-    local readoutW = 110   -- reserve right-side width for "999 / 1000 (100%)" text
-    local barW = self.width - 20 - readoutW
+    -- ── Header: vertical bar (right edge) + numeric readout + stage label (top-left) ──
+    -- GAP-01/GAP-02 closure (Plan 01.1-04). Bar moved to right edge column;
+    -- readout and stage label moved to top-left in the freed horizontal space.
     local sanity = md.sanity or 0
     local sanityMax = SanityTraits.SANITY_MAX
 
+    -- Vertical bar pinned to right edge: 14px wide column with 10px right margin.
+    -- Bar height fills panel vertical space minus top margin (10), debuff row size (24),
+    -- bottom margin (10), and a 4px gap above the debuff row = 48px reserved.
+    local barW = 14
+    local barX = self.width - barW - 10
+    local barY = 10
+    local barH = math.max(40, self.height - 48)
+
     self:drawSanityBar(barX, barY, barW, barH, sanity, sanityMax)
 
-    -- D-06 numeric readout EXACTLY in format "%d / %d (%d%%)"
+    -- D-06 numeric readout EXACTLY in format "%d / %d (%d%%)" — TOP-LEFT (was right of bar)
+    local readoutX = 10
+    local readoutY = 10
     local pct = math.floor((sanity / sanityMax) * 100)
     local readout = string.format("%d / %d (%d%%)", sanity, sanityMax, pct)
-    self:drawText(readout, barX + barW + 8, barY, 1, 1, 1, 1, UIFont.Small)
+    self:drawText(readout, readoutX, readoutY, 1, 1, 1, 1, UIFont.Small)
 
-    -- D-09 stage label "Stage: <thematic>"
+    -- D-09 stage label "Stage: <thematic>" — TOP-LEFT below readout (was below bar)
+    local stageX = 10
+    local stageY = 30   -- readoutY (10) + UIFont.Small line height (~12) + 8px gap
     local stageKey  = SanityTraits.computeStage(sanity)
     local stageName = SanityTraits.STAGE_NAMES[stageKey] or stageKey
-    self:drawText("Stage: " .. stageName, barX, barY + barH + 4, 1, 1, 1, 1, UIFont.Medium)
+    self:drawText("Stage: " .. stageName, stageX, stageY, 1, 1, 1, 1, UIFont.Medium)
 
     -- ── Refresh listbox + debuff row only when their counts changed ──
     self:refreshLogList(md)
