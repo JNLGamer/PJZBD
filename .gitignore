@@ -1,0 +1,20 @@
+# Game installation files — only track mod source code
+ProjectZomboid/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / tooling
+.vscode/
+.idea/
+
+# Internal planning, design notes, and AI tooling artifacts
+.planning/
+.claude/
+.agents/
+CLAUDE.md
+AGENTS.md
+
+# Local-only reference material that may include third-party copyrighted sources
+reference/wiki_dump/
