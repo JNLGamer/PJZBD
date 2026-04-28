@@ -41,10 +41,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Goal:** Add a visible "Psyche" tab to ISCharacterInfoWindow surfacing the previously-invisible sanity meter built in Phase 1; the tab contains a sanity bar with stage threshold ticks and numeric readout, a thematic stage label, a 50-entry persisted event log, and a 6-slot debuff icon row. Locks in the STAGE_THRESHOLDS and STAGE_NAMES tables that Phase 2 will reuse.
 **Requirements**: None (inserted post-requirements-lock; CONTEXT decisions D-01..D-23 are the source of truth)
 **Depends on:** Phase 1
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 01.1-01-PLAN.md — Constants and ModData upgrade: STAGE_THRESHOLDS, STAGE_NAMES, computeStage, idempotent log/appliedTraits seed (D-08, D-09, D-10, D-11, D-17)
+- [x] 01.1-01-PLAN.md — Constants and ModData upgrade: STAGE_THRESHOLDS, STAGE_NAMES, computeStage, idempotent log/appliedTraits seed (D-08, D-09, D-10, D-11, D-17)
 - [ ] 01.1-02-PLAN.md — Logger API and kill event wiring: SanityTraits.log() in new 4_SanityTraits_Panel.lua, plus updated kill handlers (D-12, D-13, D-14, D-15)
 - [ ] 01.1-03-PLAN.md — SanityPanel class and ISCharacterInfoWindow wrap: bar + ticks + numeric + stage label + event log listbox + 6-slot debuff row (D-01..D-07, D-16, D-18..D-23)
 

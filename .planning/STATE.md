@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 01.1 context gathered
-last_updated: "2026-04-28T01:08:21.267Z"
-last_activity: 2026-04-27
+status: executing
+stopped_at: "Completed 01.1-01-PLAN.md (data foundation: stage constants + ModData upgrade)"
+last_updated: "2026-04-28T02:59:29.812Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** A character's sanity must visibly decay with realistic occupation-specific flavor, culminating in permanent trait consequences that feel earned and irreversible.
-**Current focus:** Phase 01 — foundation
+**Current focus:** Phase 01.1 — sanity-tab-ui
 
 ## Current Position
 
-Phase: 01 (foundation) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-04-27
+Phase: 01.1 (sanity-tab-ui) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-28
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P01 | 1m | 2 tasks | 2 files |
 | Phase 01-foundation P02 | 1m 42s | 2 tasks | 1 files |
 | Phase 01-foundation P03 | 2m 13s | 3 tasks | 1 files |
+| Phase 01.1 P01 | 2m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,10 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: Use B42-correct event names OnZombieDead (singular) and OnWeaponHitXp; reference/events.md B41 names do not exist in B42
 - [Phase 01-foundation]: OnZombieDead uses getPlayer() (engine doesn't pass attacker); OnWeaponHitXp uses owner argument (engine does)
 - [Phase 01-foundation]: Defer multi-hit double-decrement guard (Pitfall 3) to Phase 4 — out of scope for Phase 1 SP
+- [Phase 01.1]: STAGE_THRESHOLDS locked: sad=750, depressed=500, traumatized=250, desensitized=50 (D-08); single source of truth shared by Phase 2 transition logic and Plan 03 panel rendering
+- [Phase 01.1]: STAGE_NAMES use thematic player-facing labels (Stable/Shaken/Hollow/Numb/Broken) per D-09; trait IDs remain unchanged
+- [Phase 01.1]: computeStage() uses <= with desensitized-first ordering so boundary value 50 returns 'broken' (lower stage); Phase 2 reuses this same helper for transitions
+- [Phase 01.1]: OnCreatePlayer refactored to upgrade-aware: explicit if/else replaces early-return; loaded saves get log={} and appliedTraits={} added idempotently per-field (Phase 1 -> 01.1 migration, no schema-version counter needed)
 
 ### Pending Todos
 
@@ -93,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T01:08:21.263Z
-Stopped at: Phase 01.1 context gathered
-Resume file: .planning/phases/01.1-sanity-tab-ui/01.1-CONTEXT.md
+Last session: 2026-04-28T02:59:29.807Z
+Stopped at: Completed 01.1-01-PLAN.md (data foundation: stage constants + ModData upgrade)
+Resume file: None
