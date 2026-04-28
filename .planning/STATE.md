@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 01-03-PLAN.md (kill-event sanity decrement) — Phase 1 implementation complete
-last_updated: "2026-04-27T22:44:00.222Z"
+stopped_at: Phase 01.1 context gathered
+last_updated: "2026-04-28T01:08:21.267Z"
 last_activity: 2026-04-27
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 1
   total_plans: 3
   completed_plans: 3
@@ -82,6 +82,10 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Roadmap Evolution
+
+- Phase 01.1 inserted after Phase 1: Sanity Tab UI (URGENT) — visible in-game UI tab so the meter is no longer invisible. Phase 1 UAT items #3 (zombie kill decrements meter) and #4 (save/reload persists) fold into this phase's verification (the bar makes them visually testable).
+
 ### Blockers/Concerns
 
 - research/SUMMARY.md was not present at roadmap creation; phase structure derived directly from requirements
@@ -89,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T22:44:00.218Z
-Stopped at: Completed 01-03-PLAN.md (kill-event sanity decrement) — Phase 1 implementation complete
-Resume file: None
+Last session: 2026-04-28T01:08:21.263Z
+Stopped at: Phase 01.1 context gathered
+Resume file: .planning/phases/01.1-sanity-tab-ui/01.1-CONTEXT.md
