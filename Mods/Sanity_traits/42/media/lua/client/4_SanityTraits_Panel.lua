@@ -66,3 +66,74 @@ function SanityTraits.log(category, text, delta)
 end
 
 print(SanityTraits.LOG_TAG .. " Panel loader: SanityTraits.log ready")
+
+-- ── SanityPanel class (D-04) ─────────────────────────────────────────────────
+-- Subclass of ISPanelJoypad. Mirrors ISCharacterProtection lifecycle:
+--   :new -> :initialise -> :createChildren (called when added as child via panel:addView)
+--   :prerender (super draws bg) -> :render (per-frame redraw)
+--
+-- Player handle uses getSpecificPlayer(self.playerNum) per D-22 (NOT getPlayer()).
+-- Per-frame refresh model per D-20: :render re-reads md.SanityTraits each call;
+-- listbox + debuff row only rebuild when their cached count differs (Pitfall 5).
+SanityPanel = ISPanelJoypad:derive("SanityPanel")
+
+function SanityPanel:new(x, y, width, height, playerNum)
+    local o = ISPanelJoypad:new(x, y, width, height)
+    setmetatable(o, self)
+    self.__index = self
+    o.playerNum = playerNum
+    -- D-22: getSpecificPlayer (NOT getPlayer) — matches vanilla ISCharacterProtection style
+    o.char = getSpecificPlayer(playerNum)
+    -- Visual styling per UI-SPEC Color section
+    o.background      = true
+    o.backgroundColor = {r=0,   g=0,   b=0,   a=0.8}
+    o.borderColor     = {r=0.4, g=0.4, b=0.4, a=1}
+    -- Cache counters used by render-time refresh (Pitfall 5 mitigation).
+    -- -1 forces first :render frame to detect a "change" and populate the listbox + debuff row.
+    o.lastLogCount     = -1
+    o.lastAppliedCount = -1
+    return o
+end
+
+function SanityPanel:initialise()
+    ISPanelJoypad.initialise(self)
+end
+
+function SanityPanel:createChildren()
+    ISPanelJoypad.createChildren(self)
+
+    -- ── Event log ISScrollingListBox child (D-21 takes most vertical space) ──
+    -- CRITICAL Pitfall 4: lifecycle order is :new -> :initialise -> :instantiate -> setFont -> addChild.
+    -- Skipping :instantiate breaks the scrollbar (Java-side UIElement never created).
+    local logX = 10
+    local logY = 54   -- below header (bar y=10 + barH=14 + 4 gap + stage label ~18 + 8 = ~54)
+    local debuffRowY = self.height - 24 - 10   -- 24 = slotSize, 10 = bottom margin
+    local logH = math.max(40, debuffRowY - logY - 8)
+    local logW = self.width - 20
+
+    self.eventLog = ISScrollingListBox:new(logX, logY, logW, logH)
+    self.eventLog:initialise()
+    self.eventLog:instantiate()                  -- REQUIRED — Pitfall 4
+    self.eventLog:setFont(UIFont.Small, 4)        -- 4 = itemPadY per UI-SPEC
+    self.eventLog.backgroundColor = {r=0, g=0, b=0, a=0.4}
+    self:addChild(self.eventLog)
+
+    -- ── Debuff icon row (D-16): 6 reserved slots, all initially hidden ───────
+    -- Slots beyond #appliedTraits stay invisible; no empty placeholder boxes drawn.
+    self.debuffSlots = {}
+    local slotSize = 24
+    local slotGap  = 4
+    local rowY     = self.height - slotSize - 10
+    local rowX     = 10
+    for i = 1, SanityTraits.DEBUFF_SLOT_COUNT do
+        local sx = rowX + (i - 1) * (slotSize + slotGap)
+        local img = ISImage:new(sx, rowY, slotSize, slotSize, nil)
+        img:initialise()
+        img:instantiate()
+        img:setVisible(false)   -- D-16: only filled slots render
+        img.traitId     = nil   -- our own tag; updated by refreshDebuffRow in :render
+        img.useFallback = false -- our own tag; signals procedural fallback rect required
+        self:addChild(img)
+        self.debuffSlots[i] = img
+    end
+end
