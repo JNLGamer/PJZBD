@@ -21,34 +21,51 @@ function SanityTraits.getStartingSanity(profName)
     return SanityTraits.STARTING_SANITY_BY_PROFESSION[profName] or SanityTraits.SANITY_MAX
 end
 
--- OnCreatePlayer handler — initializes per-character SanityTraits ModData (CORE-01, CORE-02)
--- Fires for BOTH new characters and loaded saves; the `if md.SanityTraits == nil` guard prevents overwrite on reload.
+-- OnCreatePlayer handler — initializes / upgrades per-character SanityTraits ModData (CORE-01, CORE-02, D-11, D-17)
+-- Fires for BOTH new characters and loaded saves.
+--   * New character: seeds full ModData shape including log={} and appliedTraits={}.
+--   * Loaded save:   idempotently adds missing log/appliedTraits fields (Phase 1 -> 01.1 migration, RESEARCH Risk 5).
 -- Source: 01-RESEARCH.md Pattern 2; ProjectZomboid/media/lua/client/ISUI/PlayerData/ISPlayerData.lua:203
 local function onCreatePlayer(playerIndex, player)
     if not player then return end
     local md = player:getModData()
-    if md.SanityTraits ~= nil then
-        -- Already initialized (loaded save). Do nothing — preserve persisted sanity.
-        return
+
+    if md.SanityTraits == nil then
+        -- New character path. Pitfall 2 guard: getCharacterProfession() can be nil very early.
+        local profName = nil
+        local desc = player:getDescriptor()
+        if desc and desc:getCharacterProfession() then
+            profName = desc:getCharacterProfession():getName()
+        end
+
+        local startSanity = SanityTraits.getStartingSanity(profName)
+
+        md.SanityTraits = {
+            sanity        = startSanity,
+            appliedStage  = "Healthy",
+            profession    = profName or "unknown",
+            log           = {},   -- D-11: 50-entry FIFO log of sanity events
+            appliedTraits = {},   -- D-17: list of traits this mod has applied
+        }
+
+        print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
+            .. " startingSanity=" .. tostring(startSanity))
+    else
+        -- Loaded save. Idempotently upgrade missing fields (Phase 1 -> 01.1 migration).
+        -- Do NOT touch sanity, appliedStage, or profession — those persist as-is.
+        local upgraded = false
+        if md.SanityTraits.log == nil then
+            md.SanityTraits.log = {}
+            upgraded = true
+        end
+        if md.SanityTraits.appliedTraits == nil then
+            md.SanityTraits.appliedTraits = {}
+            upgraded = true
+        end
+        if upgraded then
+            print(SanityTraits.LOG_TAG .. " OnCreatePlayer: upgraded existing save with log/appliedTraits fields")
+        end
     end
-
-    -- Pitfall 2 guard: getCharacterProfession() can be nil very early in character creation
-    local profName = nil
-    local desc = player:getDescriptor()
-    if desc and desc:getCharacterProfession() then
-        profName = desc:getCharacterProfession():getName()
-    end
-
-    local startSanity = SanityTraits.getStartingSanity(profName)
-
-    md.SanityTraits = {
-        sanity       = startSanity,
-        appliedStage = "Healthy",
-        profession   = profName or "unknown",
-    }
-
-    print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
-        .. " startingSanity=" .. tostring(startSanity))
 end
 
 Events.OnCreatePlayer.Add(onCreatePlayer)
