@@ -56,4 +56,27 @@ end
 SanityTraits.LOG_MAX_ENTRIES   = 50  -- D-12: FIFO eviction at 51st entry
 SanityTraits.DEBUFF_SLOT_COUNT = 6   -- D-16: reserved slot count in debuff row
 
+-- ── Phase 01.2 constants (counter-tree fade window + geometry + Phase 2 hook map) ──
+
+-- D-28: recency-fade window in milliseconds (real-time wall-clock).
+-- 10 real-time seconds — counter rows lerp from WHITE to MID_GREY over this window.
+SanityTraits.FADE_WINDOW_MS = 10 * 1000
+
+-- Counter tree geometry (UI-SPEC §Spacing Scale; consumed by SanityPanel:renderCounterTree).
+SanityTraits.COUNTER_ROW_H  = 14   -- row height: UIFont.Small ~12px + 2px pad
+SanityTraits.COUNTER_INDENT = 14   -- per-depth indent for subcategory rows
+SanityTraits.COUNTER_TREE_X = 10   -- counter tree left margin (matches readout/stage label X)
+SanityTraits.COUNTER_TREE_Y = 62   -- counter tree top edge (matches Phase 01.1 logY=62, Plan 05 GAP-03)
+
+-- D-29 Hook Contract 2: maps STAGE_NAMES key -> counters.stageDescents key.
+-- Used by Phase 2 stage-transition handler to address the right counter slot:
+--   SanityTraits.bumpCounter("stageDescents." .. SanityTraits.STAGE_DESCENT_KEY[newStageKey])
+-- "stable" intentionally absent — recovering UP to stable doesn't count as a descent.
+SanityTraits.STAGE_DESCENT_KEY = {
+    shaken = "toShaken",
+    hollow = "toHollow",
+    numb   = "toNumb",
+    broken = "toBroken",
+}
+
 print(SanityTraits.LOG_TAG .. " Init loaded (v" .. SanityTraits.VERSION .. ")")
