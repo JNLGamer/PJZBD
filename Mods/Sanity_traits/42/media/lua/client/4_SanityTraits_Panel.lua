@@ -111,6 +111,8 @@ function SanityPanel:new(x, y, width, height, playerNum)
     -- -1 forces first :render frame to detect a "change" and populate the debuff row.
     -- (lastLogCount removed in Phase 01.2 — listbox is gone; counter tree rebuilds every frame.)
     o.lastAppliedCount = -1
+    -- Sub-tab state: "history" (counter tree, default), "positives", "negatives"
+    o.activeSubtab = "history"
     return o
 end
 
@@ -177,6 +179,26 @@ function SanityPanel:createChildren()
         self:addChild(img)
         self.debuffSlots[i] = img
     end
+
+    -- ── Sub-tab buttons (3 sections of the Psyche view) ─────────────────────
+    -- Sits between the divider at y=50 and the counter tree at y=82.
+    local btnW, btnH, btnY, btnGap = 80, 18, 54, 4
+    local function mkSubtab(key, label, idx)
+        local b = ISButton:new(10 + (idx - 1) * (btnW + btnGap), btnY, btnW, btnH, label, self, SanityPanel.onSubtabClick)
+        b.internal = key
+        b:initialise()
+        b:instantiate()
+        self:addChild(b)
+        return b
+    end
+    self.btnHistory   = mkSubtab("history",   "History",   1)
+    self.btnPositives = mkSubtab("positives", "Positives", 2)
+    self.btnNegatives = mkSubtab("negatives", "Negatives", 3)
+end
+
+-- Sub-tab click handler. Stores the chosen tab key on the panel; render reads it.
+function SanityPanel:onSubtabClick(button)
+    self.activeSubtab = button.internal
 end
 
 -- ── Format helpers (private to this file) ────────────────────────────────────
@@ -541,10 +563,28 @@ function SanityPanel:render()
     -- — the (barW + 18) margin still matches what the listbox right-edge used to be).
     self:drawRect(10, 50, self.width - 20 - (barW + 18), 1, 1, 0.4, 0.4, 0.4)
 
-    -- ── Counter tree render (Phase 01.2 D-27): replaces Phase 01.1 listbox refresh ──
-    -- Drawn AFTER header divider, BEFORE refreshDebuffRow (Pattern 9 render order).
-    -- Pure drawText procedural — no widget instantiation, no per-frame cache.
-    self:renderCounterTree(md)
+    -- ── Sub-tab visual state: highlight active button ──────────────────────
+    local function setActive(btn, active)
+        if active then
+            btn.backgroundColor = {r=0.3, g=0.3, b=0.3, a=0.9}
+            btn.borderColor     = {r=0.9, g=0.9, b=0.9, a=1}
+        else
+            btn.backgroundColor = {r=0.1, g=0.1, b=0.1, a=0.6}
+            btn.borderColor     = {r=0.4, g=0.4, b=0.4, a=1}
+        end
+    end
+    setActive(self.btnHistory,   self.activeSubtab == "history")
+    setActive(self.btnPositives, self.activeSubtab == "positives")
+    setActive(self.btnNegatives, self.activeSubtab == "negatives")
+
+    -- ── Sub-tab content dispatch ───────────────────────────────────────────
+    if self.activeSubtab == "positives" then
+        self:renderPositives(md)
+    elseif self.activeSubtab == "negatives" then
+        self:renderNegatives(md)
+    else
+        self:renderCounterTree(md)
+    end
 
     -- ── Refresh debuff row only when count changed ──
     self:refreshDebuffRow(md)
@@ -566,47 +606,14 @@ function SanityPanel:render()
     end
 end
 
--- ── SanityPositivePanel: "What Helps Sanity" tab ────────────────────────────
-SanityPositivePanel = ISPanelJoypad:derive("SanityPositivePanel")
-
-function SanityPositivePanel:new(x, y, width, height, playerNum)
-    local o = ISPanelJoypad:new(x, y, width, height)
-    setmetatable(o, self); self.__index = self
-    o.playerNum = playerNum
-    o.char = getSpecificPlayer(playerNum)
-    o:noBackground()
-    return o
-end
-
-function SanityPositivePanel:initialise()
-    ISPanelJoypad.initialise(self)
-end
-
-function SanityPositivePanel:render()
-    if self.parent then
-        local pw = self.parent:getWidth()
-        local th = self.parent.tabHeight or 0
-        local ph = self.parent:getHeight() - th
-        if pw and pw > 0 and pw ~= self.width then self:setWidth(pw) end
-        if ph and ph > 0 and ph ~= self.height then self:setHeight(ph) end
-    end
-    if not self.char then
-        self.char = getSpecificPlayer(self.playerNum)
-        if not self.char then return end
-    end
-    local md = self.char:getModData().SanityTraits
-    if not md then return end
-
-    local lh, X, y, INDENT = 15, 10, 10, 12
+-- ── Positives sub-tab: "What Helps Sanity" ──────────────────────────────────
+function SanityPanel:renderPositives(md)
+    local lh, X, INDENT = 15, 10, 12
+    local y = SanityTraits.COUNTER_TREE_Y or 82
     local function row(text, depth, r, g, b)
         self:drawText(text, X + (depth or 0) * INDENT, y, r or 0.6, g or 1.0, b or 0.6, 1, UIFont.Small)
         y = y + lh
     end
-
-    self:drawText("What Helps Sanity", X, y, 1, 1, 1, 1, UIFont.Medium)
-    y = y + lh + 4
-    self:drawRect(X, y, self.width - 20, 1, 1, 0.5, 0.5, 0.5)
-    y = y + 8
 
     local bonus = SanityTraits.GOOD_EVENT_BONUS or 5
     local cap   = SanityTraits.GOOD_EVENT_DAILY_CAP or 30
@@ -634,47 +641,14 @@ function SanityPositivePanel:render()
     end
 end
 
--- ── SanityNegativePanel: "What Hurts Sanity" tab ─────────────────────────────
-SanityNegativePanel = ISPanelJoypad:derive("SanityNegativePanel")
-
-function SanityNegativePanel:new(x, y, width, height, playerNum)
-    local o = ISPanelJoypad:new(x, y, width, height)
-    setmetatable(o, self); self.__index = self
-    o.playerNum = playerNum
-    o.char = getSpecificPlayer(playerNum)
-    o:noBackground()
-    return o
-end
-
-function SanityNegativePanel:initialise()
-    ISPanelJoypad.initialise(self)
-end
-
-function SanityNegativePanel:render()
-    if self.parent then
-        local pw = self.parent:getWidth()
-        local th = self.parent.tabHeight or 0
-        local ph = self.parent:getHeight() - th
-        if pw and pw > 0 and pw ~= self.width then self:setWidth(pw) end
-        if ph and ph > 0 and ph ~= self.height then self:setHeight(ph) end
-    end
-    if not self.char then
-        self.char = getSpecificPlayer(self.playerNum)
-        if not self.char then return end
-    end
-    local md = self.char:getModData().SanityTraits
-    if not md then return end
-
-    local lh, X, y, INDENT = 15, 10, 10, 12
+-- ── Negatives sub-tab: "What Hurts Sanity" ───────────────────────────────────
+function SanityPanel:renderNegatives(md)
+    local lh, X, INDENT = 15, 10, 12
+    local y = SanityTraits.COUNTER_TREE_Y or 82
     local function row(text, depth, r, g, b)
         self:drawText(text, X + (depth or 0) * INDENT, y, r or 1.0, g or 0.6, b or 0.6, 1, UIFont.Small)
         y = y + lh
     end
-
-    self:drawText("What Hurts Sanity", X, y, 1, 1, 1, 1, UIFont.Medium)
-    y = y + lh + 4
-    self:drawRect(X, y, self.width - 20, 1, 1, 0.5, 0.5, 0.5)
-    y = y + 8
 
     local zw = SanityTraits.ZOMBIE_WEIGHT   or 10
     local sw = SanityTraits.SURVIVOR_WEIGHT or 30
@@ -760,14 +734,6 @@ else
         -- tab construction at lines 127-149.
         self.panel:addView("Psyche", self.sanityView)
 
-        local posView = SanityPositivePanel:new(panelX, panelY, panelW, panelH, self.playerNum)
-        posView:initialise()
-        self.panel:addView("Positives", posView)
-
-        local negView = SanityNegativePanel:new(panelX, panelY, panelW, panelH, self.playerNum)
-        negView:initialise()
-        self.panel:addView("Negatives", negView)
-
-        print(SanityTraits.LOG_TAG .. " Psyche tab installed (+ Positives + Negatives)")
+        print(SanityTraits.LOG_TAG .. " Psyche tab installed (with History/Positives/Negatives sub-tabs)")
     end
 end

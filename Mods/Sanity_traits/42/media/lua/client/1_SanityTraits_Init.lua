@@ -66,7 +66,7 @@ SanityTraits.FADE_WINDOW_MS = 10 * 1000
 SanityTraits.COUNTER_ROW_H  = 14   -- row height: UIFont.Small ~12px + 2px pad
 SanityTraits.COUNTER_INDENT = 14   -- per-depth indent for subcategory rows
 SanityTraits.COUNTER_TREE_X = 10   -- counter tree left margin (matches readout/stage label X)
-SanityTraits.COUNTER_TREE_Y = 62   -- counter tree top edge (matches Phase 01.1 logY=62, Plan 05 GAP-03)
+SanityTraits.COUNTER_TREE_Y = 82   -- counter tree top edge (bumped from 62 to make room for sub-tab strip at y=54)
 
 -- D-29 Hook Contract 2: maps STAGE_NAMES key -> counters.stageDescents key.
 -- Used by Phase 2 stage-transition handler to address the right counter slot:
