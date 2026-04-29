@@ -714,10 +714,11 @@ function SanityNegativePanel:render()
     y = y + 6
 
     row("At Hollow stage:  addiction trait assigned")
+    local traits = self.char:getTraits()
     local addicted =
-        (self.char:HasTrait("base:smoker")                    and "Smoker")             or
-        (self.char:HasTrait("sanitymod:alcoholic")            and "Alcoholic")          or
-        (self.char:HasTrait("sanitymod:painkiller_dependent") and "Painkiller dependent") or
+        (traits:contains("base:smoker")                    and "Smoker")             or
+        (traits:contains("sanitymod:alcoholic")            and "Alcoholic")          or
+        (traits:contains("sanitymod:painkiller_dependent") and "Painkiller dependent") or
         nil
     if addicted then
         row("Current addiction:  " .. addicted, 1, 1.0, 0.75, 0.5)

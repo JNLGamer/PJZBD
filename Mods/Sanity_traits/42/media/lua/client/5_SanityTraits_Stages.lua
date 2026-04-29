@@ -113,7 +113,7 @@ SanityTraits.LEGACY_APPLIEDSTAGE_COERCION = {
 -- API form: string-form per 02-01-SUMMARY.md (Wave 0 smoke test confirmed api_form=string).
 function SanityTraits.isSystemDisabled(player)
     if not player then return true end
-    return player:HasTrait("base:desensitized")
+    return player:getTraits():contains("base:desensitized")
 end
 
 print(SanityTraits.LOG_TAG .. " Stages constants loaded (HYSTERESIS_BUFFER="
@@ -171,7 +171,7 @@ end
 -- variants explicitly via STAGE_TRAIT_REMOVAL_ON_BROKEN — that's the only stage that does.)
 -- Returns true if a NEW application happened, false if already-present.
 local function applyTrait(player, traitId, stageKey)
-    if player:HasTrait(traitId) then
+    if player:getTraits():contains(traitId) then
         -- Already present — could be (a) we already applied it, (b) player picked at creation,
         -- (c) another mod applied. Don't double-add and don't claim ownership.
         return false
@@ -195,7 +195,7 @@ end
 -- Returns true if engine-remove happened (player had the trait), false otherwise.
 local function removeTrait(player, traitId)
     local removed = false
-    if player:HasTrait(traitId) then
+    if player:getTraits():contains(traitId) then
         player:getTraits():remove(traitId)
         removed = true
     end
@@ -473,9 +473,10 @@ function SanityTraits.evaluateAddictions(player)
 
     -- D-59 strict re-entry guard: any existing addiction blocks new application.
     -- HasTrait on unregistered IDs returns safe-false per Phase 02-01 SUMMARY.
-    if player:HasTrait("base:smoker")
-       or player:HasTrait("sanitymod:alcoholic")
-       or player:HasTrait("sanitymod:painkiller_dependent") then
+    local traits = player:getTraits()
+    if traits:contains("base:smoker")
+       or traits:contains("sanitymod:alcoholic")
+       or traits:contains("sanitymod:painkiller_dependent") then
         return
     end
 
