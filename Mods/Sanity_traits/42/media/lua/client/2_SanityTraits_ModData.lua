@@ -34,6 +34,22 @@ end
 -- Source: 01-RESEARCH.md Pattern 2; 01.2-RESEARCH.md Pattern 6 + Pitfall 4
 local function onCreatePlayer(playerIndex, player)
     if not player then return end
+
+    -- D-36 (Phase 2): character-creation off-switch.
+    -- Trips for Veteran (vanilla GrantedTraits = base:desensitized; verified
+    -- character_professions.txt:258), modded "hardened" professions, and any
+    -- character that has base:desensitized at creation time. When tripped,
+    -- md.SanityTraits is NEVER seeded — 4_SanityTraits_Panel.lua's existing
+    -- `if not md.SanityTraits then return end` guard then hides the Psyche tab.
+    -- Result: presence-of-tab in-game means "you traveled this road"; absence
+    -- means "you started immune" (D-40 narrative invariant).
+    --
+    -- Single source of truth: SanityTraits.isSystemDisabled (5_SanityTraits_Stages.lua, Plan 02).
+    if SanityTraits.isSystemDisabled(player) then
+        print(SanityTraits.LOG_TAG .. " OnCreatePlayer: system disabled (HasTrait base:desensitized) — skipping ModData seed")
+        return
+    end
+
     local md = player:getModData()
 
     if md.SanityTraits == nil then
