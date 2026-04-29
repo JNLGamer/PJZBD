@@ -1,0 +1,6 @@
+name=PZLife Trespassing
+poster=poster.png
+id=PZLifeTrespassing
+description=Replaces the Bandits Week One Addon: Trespassing image moodle with a text-based escalating warning system. Three warning tiers ("Private property" -> "You're trespassing" -> "I'm calling the cops!") that raise wanted stars on level 3 if the player doesn't leave.
+author=ProjectZLife
+require=please,update,to,b42,version,of,the,game

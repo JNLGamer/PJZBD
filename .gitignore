@@ -10,6 +10,9 @@ Thumbs.db
 ProjectZomboid/
 modPlanner/reference/
 modPlanner/workshop refs/
+# upstream mod copies in workBench (used for dev reference; don't commit ~600MB of upstream content)
+modPlanner/workBench/Bandits/
+modPlanner/workBench/BanditsWeekOne/
 
 # scratch
 .[Pp][Ll][Aa][Nn][Nn][Ii][Nn][Gg]/

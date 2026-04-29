@@ -1,0 +1,11 @@
+name=PZLife Tetris Prices
+poster=poster.png
+id=PZLifeTetrisPrices
+description=<H1><GREEN>PZLIFE TETRIS PRICES B42.17+
+description=<BR>
+description=Adds price tooltip lines to all hover-tooltips (vanilla + Inventory Tetris).
+description=<BR>
+description=Part of the Project Z Life collection.
+description=Requires Bandits + BanditsWeekOne + BanditsWeekOneAddonItemTags.
+author=ProjectZLife
+require=\Bandits2,\BanditsWeekOne,\BanditsWeekOneAddonItemTags

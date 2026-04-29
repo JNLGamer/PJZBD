@@ -1,0 +1,11 @@
+name=Bandit Civil Decorum
+poster=poster.png
+id=BanditCivilDecorum
+description=<H1><GREEN>BANDIT CIVIL DECORUM B42.17+
+description=<BR>
+description=Caps reactor count at incidents (corpses, protests, etc.) so NPCs stop piling up.
+description=<BR>
+description=Part of the Project Z Life collection.
+description=Requires Bandits + BanditsWeekOne.
+author=ProjectZLife
+require=\Bandits2,\BanditsWeekOne

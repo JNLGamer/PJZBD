@@ -1,0 +1,8 @@
+name=Bandit Chat Pause
+poster=poster.png
+id=BanditChatPause
+description=Pauses the game in singleplayer when the chat is open (T key). Built for use alongside Bandits/BanditsWeekOne but works as a standalone tweak.
+description=<BR>
+description=Singleplayer only — pause has no effect in multiplayer (PZ MP cannot pause).
+author=BanditPatches
+require=please,update,to,b42,version,of,the,game

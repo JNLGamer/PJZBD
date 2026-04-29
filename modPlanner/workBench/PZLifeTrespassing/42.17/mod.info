@@ -1,0 +1,11 @@
+name=PZLife Trespassing
+poster=poster.png
+id=PZLifeTrespassing
+description=<H1><GREEN>PZLIFE TRESPASSING B42.17+
+description=<BR>
+description=Text-based escalating trespassing warnings. Replaces the BWO image moodle.
+description=<BR>
+description=Part of the Project Z Life collection.
+description=Requires Bandits + BanditsWeekOne + PZLifeWantedSystem.
+author=ProjectZLife
+require=\Bandits2,\BanditsWeekOne,\PZLifeWantedSystem
