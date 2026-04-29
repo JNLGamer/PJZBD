@@ -9,7 +9,7 @@
 -- Decisions honored:
 --   D-36 (off-switch) — isSystemDisabled gate at top of every entry-point handler
 --   D-37 (no clamping) — only math.max(SANITY_MIN, ...) and math.min(SANITY_MAX, ...)
---   D-43 (Events.EveryTenMinutes) — confirmed reference/events.md:45
+--   D-43 (Events.EveryTenMinutes) — confirmed modPlanner/reference/events.md:45
 --   D-44 (decay rates 1/2/3/4 by stage) — table read via computeStage
 --   D-45 (recovery rates 1/2/2/2 + multi-moodle contentment gate) — UNHAPPY=0, STRESS<3, BORED<3, PANIC=0
 --   D-46 (sleep edge-detect, no time-multiplier compensation, defensive guards)

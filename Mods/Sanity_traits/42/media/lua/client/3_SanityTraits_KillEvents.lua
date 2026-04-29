@@ -4,7 +4,7 @@
 -- Source: .planning/phases/01-foundation/01-RESEARCH.md Patterns 3 & 4
 -- IMPORTANT: B42 events are OnZombieDead (singular) and OnWeaponHitXp.
 -- The plural-form zombie-event name and the legacy weapon-hit-character event from
--- reference/events.md DO NOT EXIST in B42 — use the names above instead.
+-- modPlanner/reference/events.md DO NOT EXIST in B42 — use the names above instead.
 --
 -- Phase 01.2 / Plan 04: switched from SanityTraits.log to SanityTraits.bumpCounter.
 -- Phase 1 console receipts ("Zombie killed. Sanity: X -> Y") preserved verbatim.

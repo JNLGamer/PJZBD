@@ -1,7 +1,7 @@
 -- Sanity_traits / 1_SanityTraits_Init.lua
 -- Phase 1 / Plan 01: Namespace bootstrap and shared constants.
 -- Loaded first (numeric prefix "1_") so subsequent client/ files can reference SanityTraits.*
--- Source patterns: reference/mod_structure.md, .planning/phases/01-foundation/01-RESEARCH.md (Pattern 1)
+-- Source patterns: modPlanner/reference/mod_structure.md, .planning/phases/01-foundation/01-RESEARCH.md (Pattern 1)
 
 SanityTraits = SanityTraits or {}
 

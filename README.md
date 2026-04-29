@@ -13,7 +13,8 @@ sources. It is maintained as an active workspace, not a one-shot release.
 ```
 PJZBD/
 ├── Mods/             Mod source code (one folder per mod, Workshop-ready)
-├── reference/        Modding reference material (event hooks, item formats, examples)
+├── modPlanner/       Active development workspace + reference material
+│   └── reference/    Modding reference material (event hooks, item formats, examples)
 ├── README.md         This file
 └── .gitignore
 ```
@@ -110,7 +111,7 @@ These are exploratory and not committed to a release schedule.
 
 ## Reference Material
 
-The `reference/` folder is a working set of compiled notes drawn from
+The `modPlanner/reference/` folder is a working set of compiled notes drawn from
 `ProjectZomboid/media/lua/` and the modding wiki. It includes:
 
 - An index of all vanilla traits with point costs and exclusion rules.
