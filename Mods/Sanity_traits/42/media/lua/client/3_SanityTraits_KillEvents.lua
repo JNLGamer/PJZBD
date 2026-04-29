@@ -5,6 +5,9 @@
 -- IMPORTANT: B42 events are OnZombieDead (singular) and OnWeaponHitXp.
 -- The plural-form zombie-event name and the legacy weapon-hit-character event from
 -- reference/events.md DO NOT EXIST in B42 — use the names above instead.
+--
+-- Phase 01.2 / Plan 04: switched from SanityTraits.log to SanityTraits.bumpCounter.
+-- Phase 1 console receipts ("Zombie killed. Sanity: X -> Y") preserved verbatim.
 
 -- ── CORE-03: Zombie kill -> reduce sanity by ZOMBIE_WEIGHT ───────────────────
 -- OnZombieDead fires once per zombie death; in singleplayer the attacker is getPlayer().
@@ -19,9 +22,10 @@ local function onZombieDead(zed)
     md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - SanityTraits.ZOMBIE_WEIGHT)
     print(SanityTraits.LOG_TAG .. " Zombie killed. Sanity: " .. tostring(before)
         .. " -> " .. tostring(md.SanityTraits.sanity))
-    -- Plan 01.1-02 (D-15): record event for the Psyche tab event log.
-    -- Delta is signed-negative metadata; the actual decrement was already applied above.
-    SanityTraits.log("kill", "Zombie killed", -SanityTraits.ZOMBIE_WEIGHT)
+    -- Phase 01.2 / Plan 04 (D-27): increment the counter tree instead of the deprecated log.
+    -- Delta is signed-negative metadata for the bumpCounter console receipt.
+    -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
+    SanityTraits.bumpCounter("zombiesKilled", -SanityTraits.ZOMBIE_WEIGHT)
 end
 
 Events.OnZombieDead.Add(onZombieDead)
@@ -45,9 +49,10 @@ local function onWeaponHitXp(owner, weapon, hitObject, damage, hitCount)
     md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - SanityTraits.SURVIVOR_WEIGHT)
     print(SanityTraits.LOG_TAG .. " Survivor killed. Sanity: " .. tostring(before)
         .. " -> " .. tostring(md.SanityTraits.sanity))
-    -- Plan 01.1-02 (D-15): record event for the Psyche tab event log.
-    -- Delta is signed-negative metadata; the actual decrement was already applied above.
-    SanityTraits.log("kill", "Survivor killed", -SanityTraits.SURVIVOR_WEIGHT)
+    -- Phase 01.2 / Plan 04 (D-27): increment the counter tree instead of the deprecated log.
+    -- Delta is signed-negative metadata for the bumpCounter console receipt.
+    -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
+    SanityTraits.bumpCounter("survivorsKilled", -SanityTraits.SURVIVOR_WEIGHT)
 end
 
 Events.OnWeaponHitXp.Add(onWeaponHitXp)
