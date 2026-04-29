@@ -1,145 +1,210 @@
+<p align="center">
+  <img src="docs/images/cover.png" alt="Project Zomboid — survivor in the rain" width="100%">
+</p>
+
 # PJZBD
 
-A personal modding archive for Project Zomboid Build 42, used as a sandbox
-for AI-assisted development and in-game testing.
+> **A community-powered, AI-assisted reimagining of Project Zomboid Build 42.**
+> Free to play with, non-commercial, and built in the open.
 
-The repository pairs Workshop-ready mod source with a curated reference set
-and an AI tooling layer (Claude Code + the GSD planning workflow). Mods are
-designed, drafted, and iterated on inside this workspace, then deployed into
-Project Zomboid for live testing.
+PJZBD is a personal modding archive that aims to **rework Project Zomboid
+using mostly free community content** — the project layers original mods,
+curated workshop references, and a careful set of authoritative B42 sources
+into a single workspace where the apocalypse can be reshaped.
 
----
-
-## What this repo is
-
-- An archive of Project Zomboid mods I'm building and maintaining over time.
-- A controlled environment for AI-assisted modding: research, planning,
-  implementation, and verification all run against a curated set of B42
-  authoritative sources, not open-web search.
-- A test harness: every mod is built incrementally, deployed into a real
-  Zomboid install, and validated in-game before the next slice is added.
-
-It is **not** a release distribution channel — published Workshop versions
-live on the Steam Workshop. This repo is the workshop bench.
+Most of the source here is **AI-assisted, written for time-sake, and
+released for free**. No monetization, no Patreon, no ads — just an open
+sandbox for ideas and the people who want to play with them.
 
 ---
 
-## Repository Layout
+## ✨ What this project is
+
+- A **mod archive** — Workshop-ready Project Zomboid Build 42 mods, kept
+  in a clean, deployable layout.
+- A **community-content rework** — built on, and alongside, the work of
+  Workshop creators, with their mods used as references and inspiration
+  in the dev workspace.
+- An **AI collaboration sandbox** — Claude Code drives the research,
+  planning, and most of the implementation, against a curated B42 reference
+  set so the output stays grounded in real game source.
+- **Non-profit, community-first** — every mod here is intended to ship
+  free on the Steam Workshop. Time and attention are the only currencies.
+
+---
+
+## 🧠 How it's built
+
+```
+Research  →  Plan  →  Build  →  Deploy  →  Play-test  →  Verify  →  Ship
+```
+
+Each slice of work goes through the same loop:
+
+1. **Research** against the curated B42 reference set and the vanilla
+   game's own Lua — no guesswork, no AI prior knowledge taken on faith.
+2. **Plan** the slice into small, verifiable tasks.
+3. **Build** in the dev workspace (`modPlanner/<ModName>/`).
+4. **Deploy** by copying into `Mods/<ModName>/` and then into the live
+   `Zomboid/mods/` folder.
+5. **Play-test** in-game until the slice behaves end-to-end.
+6. **Verify** against the slice's success criteria.
+7. **Ship** when (and only when) it actually works.
+
+The AI does the heavy typing; the human does the play-testing and the
+"does this actually feel good?" judgement calls.
+
+---
+
+## 🗺️ Repository Layout
 
 ```
 PJZBD/
-├── Mods/             Deploy output — finished, Workshop-ready mod copies
-├── modPlanner/       Active development workspace (gitignored)
-│   ├── <ModName>/    One folder per mod under active iteration
-│   ├── reference/    Curated B42 modding reference (traits, items, events…)
-│   └── ProjectZomboid/  Local read-only game install used as ground truth
+├── Mods/             Deploy-ready, Workshop-shaped mod copies
+├── modPlanner/       Active dev workspace (gitignored)
+│   ├── <ModName>/    One folder per mod under iteration
+│   ├── reference/    Curated B42 modding reference
+│   ├── workshop refs/  Workshop mods kept locally for inspiration & study
+│   └── ProjectZomboid/  Read-only local game install (ground truth)
+├── docs/images/      Artwork and screenshots used by this README
 ├── README.md
 └── .gitignore
 ```
 
-Each mod under `Mods/` follows the standard Project Zomboid layout:
+Each mod under `Mods/` follows the standard PZ layout:
 
 ```
 Mods/<ModName>/
-├── mod.info                       Workshop metadata
+├── mod.info
 ├── 42/
 │   └── media/
-│       ├── lua/{client,server,shared}/   Lua source
-│       └── scripts/                       Item / recipe / sandbox .txt
-└── poster.png                     Optional Workshop thumbnail
+│       ├── lua/{client,server,shared}/
+│       └── scripts/
+└── poster.png
 ```
 
 ---
 
-## AI-Assisted Workflow
+<p align="center">
+  <img src="docs/images/hospital.png" alt="Survivors holding a hospital corridor" width="100%">
+</p>
 
-This repo is set up to be driven by Claude Code with the GSD (Get Stuff Done)
-planning workflow. The loop, per slice of work:
-
-1. **Research** — pull authoritative B42 patterns from `modPlanner/reference/`
-   and vanilla source in `modPlanner/ProjectZomboid/media/lua/`. No web
-   search; the wiki is unreliable / blocked, vanilla source is ground truth.
-2. **Plan** — break the slice into small, verifiable tasks with explicit
-   success criteria.
-3. **Execute** — implement against the dev copy in `modPlanner/<ModName>/`.
-4. **Test** — copy the dev copy into `Mods/<ModName>/`, then deploy to
-   `C:\Users\joaqu\Zomboid\mods\<ModName>\` and load the game.
-5. **Verify** — UAT against the slice's success criteria; only then does
-   the slice count as shipped.
-
-Planning artifacts (`.planning/`, `.claude/`, `.agents/`) are gitignored —
-they're scaffolding for the AI loop, not part of the mod source.
-
-### Why this structure
-
-- **Two copies of each mod (dev + deploy).** Edits happen in `modPlanner/`;
-  `Mods/` only updates after a slice passes verification. Keeps in-progress
-  work from corrupting tested builds.
-- **Curated reference, not the open web.** The B42 modding surface is poorly
-  documented and littered with B41-era misinformation. Research is anchored
-  to local files that have already been pre-verified against vanilla source.
-- **Vanilla-source-first verification.** Any API claim must be backed by a
-  call site in the actual game's Lua, not by AI prior knowledge.
-
----
-
-## Current Mods
+## 🎮 Original Mods
 
 ### Sanity_traits
 
-Singleplayer Build 42 mod adding an occupation-flavored psychological
-deterioration system. Characters carry a hidden sanity meter (0–1000) that
-decays with kills and time and progresses through five stages — Stable,
-Shaken, Hollow, Numb, Broken — each with thematic flavor and permanent
-trait consequences. Starting profession affects starting sanity (Veterans
-start near Numb; civilians start Stable).
+A singleplayer Build 42 mod that adds an **occupation-flavored psyche
+system**. Survivors carry a hidden sanity meter (0–1000) that drifts
+through five stages — **Stable → Shaken → Hollow → Numb → Broken** —
+each with thematic flavor and permanent trait consequences. Veterans
+start near Numb. Civilians start Stable. Everyone gets there eventually.
 
-A custom "Psyche" tab in the character info window surfaces the meter,
-current stage, a 50-entry event log, and active sanity-applied debuff
-traits.
+A custom **"Psyche" tab** in the character info window surfaces the
+meter, current stage, a 50-entry event log, and active sanity-applied
+debuff traits — so the player can actually see their character coming
+apart.
 
-**Compatibility:** B42 only. **Scope:** Singleplayer.
-**Persistence:** Per-character ModData.
+| Field | Value |
+|------|------|
+| Compatibility | Build 42 only |
+| Scope | Singleplayer |
+| Persistence | Per-character ModData |
+| License | Free, non-commercial |
 
-#### Roadmap
+<details>
+<summary><strong>Roadmap</strong></summary>
 
 | Stage | Scope | Status |
 |------|------|--------|
-| 1 | Sanity meter, kill-driven decay, profession-based starting values | Complete |
-| 2 | "Psyche" tab UI — bar, stage label, event log, debuff row | Complete |
-| 3 | Stage transition logic — automatic trait application at thresholds | Planned |
-| 4 | Passive decay + contentment-gated recovery (Unhappy moodle) | Planned |
-| 5 | Per-occupation psyche profiles — decay rates, starts, flavor text | Planned |
-| 6 | Habit and addiction layer (alcohol / coping) | Planned |
-| 7 | Sandbox menu — all weights and thresholds in-game | Planned |
+| 1 | Sanity meter, kill-driven decay, profession-based starts | ✅ Complete |
+| 2 | "Psyche" tab UI — bar, stage label, event log, debuff row | ✅ Complete |
+| 3 | Stage transitions — automatic trait application at thresholds | 📋 Planned |
+| 4 | Passive decay + contentment-gated recovery | 📋 Planned |
+| 5 | Per-occupation psyche profiles | 📋 Planned |
+| 6 | Habit & addiction layer (alcohol / coping) | 📋 Planned |
+| 7 | Sandbox menu — every weight & threshold exposed in-game | 📋 Planned |
+
+</details>
 
 ---
 
-## Planned Future Mods
+## 🔧 Workshop References
 
-Exploratory, not on a release schedule:
+This workspace keeps a local-only stash of community Workshop mods under
+`modPlanner/workshop refs/`. They're **not** redistributed by this repo
+(the folder is gitignored) — they live alongside the dev workspace as
+study material: how other modders solve UI, persistence, balance, and
+event handling in B42.
 
-- Occupation rebalance pack centered on realistic civilian professions.
-- Negative-trait expansion with deeper behavioral consequences.
-- Quality-of-life systems surfacing hidden character state in existing UI.
+Every original mod here that draws meaningfully on Workshop content will
+list its sources and credit the authors below.
+
+<details>
+<summary><strong>Workshop mods studied / referenced</strong> (click to expand)</summary>
+
+> _No items added yet — this section will populate as Workshop mods are
+> brought into the `workshop refs/` folder for study._
+>
+> Format used per entry:
+>
+> - **Mod Name** — by [Author] · [Workshop link] · _what this project
+>   learned or borrowed (with credit)_
+
+</details>
 
 ---
 
-## Conventions
+## 🌱 Planned Future Mods
 
-- Lua hooks use `Events.<EventName>.Add(function(...) end)`.
-- All globals are namespaced (e.g. `SanityTraits.*`) to avoid conflicts.
-- Items: `Mods/<ModName>/42/media/scripts/items_<modname>.txt`.
-  Recipes: `recipes_<modname>.txt`.
-- `mod.info` requires `name`, `id`, `description`, `modversion`, B42
-  workshop tag.
-- Client load order is alphanumeric; numeric prefixes (`1_`, `2_`…)
-  enforce dependency order.
+These are exploratory — not on a release schedule, but on the radar:
+
+- **Civilian occupation rebalance** — realistic everyday professions,
+  stronger starting kits, less binary "combat vs noncombat" framing.
+- **Negative-trait expansion** — deeper behavioral consequences,
+  extending the ideas first explored in Sanity_traits.
+- **Quality-of-life UI** — more "previously hidden" character state
+  surfaced in the existing UI, in the same spirit as the Psyche tab.
+- **Community-content rework packs** — curated bundles that combine
+  free Workshop mods with thin compatibility / balance glue, so a fresh
+  install can feel meaningfully different out of the box.
 
 ---
 
-## License
+## 🤝 Built on community work
 
-To be decided per-mod. Source under `Mods/` is original work unless a
-per-mod `LICENSE` or `mod.info` field says otherwise. Reference material
-under `modPlanner/reference/` is local-only and not redistributed.
+PJZBD couldn't exist without:
+
+- **The Indie Stone**, for Project Zomboid itself and for shipping a
+  modding surface that's worth digging into.
+- **The Workshop modding community**, whose published mods are studied
+  and credited per-mod in the Workshop References section above.
+- **Open AI tooling**, which makes it possible for one person to ship
+  systems that would otherwise take a team.
+
+If your work is referenced here and you'd like the credit adjusted,
+removed, or a link added, just open an issue.
+
+---
+
+## 📜 License & ethos
+
+- All original code under `Mods/` is released **free and non-commercial**.
+  Per-mod `LICENSE` or `mod.info` fields take precedence where they exist.
+- Workshop content stored locally under `modPlanner/workshop refs/` is
+  **not** redistributed by this repo and remains the property of its
+  original authors.
+- Reference material under `modPlanner/reference/` is for personal use
+  and is gitignored.
+- Artwork in `docs/images/` is Project Zomboid promotional / concept
+  art © The Indie Stone, used here illustratively for a non-commercial
+  fan project. Happy to remove on request.
+
+---
+
+<p align="center">
+  <img src="docs/images/overgrown-city.png" alt="Overgrown post-apocalyptic city with deer" width="100%">
+</p>
+
+<p align="center">
+  <em>Made with ❤️, AI, and a lot of zombies.</em>
+</p>
