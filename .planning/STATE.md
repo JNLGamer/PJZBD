@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01.2-01-PLAN.md (counters ModData migration)
-last_updated: "2026-04-29T06:07:19.473Z"
+stopped_at: Completed 01.2-03-PLAN.md (bumpCounter API + listbox surgery)
+last_updated: "2026-04-29T06:18:09.768Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.2 (aggregated-activity-view) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-29
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.1 P06 | 10m | 5 tasks | 2 files |
 | Phase 01.2 P02 | 3m | 1 tasks | 1 files |
 | Phase 01.2 P01 | 2m 16s | 2 tasks | 1 files |
+| Phase 01.2 P03 | 5m 13s | 4 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,10 @@ Recent decisions affecting current work:
 - [Phase 01.2]: Plan 02: 6 namespace constants added to 1_SanityTraits_Init.lua (FADE_WINDOW_MS=10000, COUNTER_ROW_H/INDENT=14, COUNTER_TREE_X=10, COUNTER_TREE_Y=62, STAGE_DESCENT_KEY map); Phase 01.1 constants preserved verbatim (regression-safe); LOG_MAX_ENTRIES kept as dead code per D-27 migration approach
 - [Phase 01.2]: Plan 01: counters schema seeded on new chars + idempotently added on loaded saves; clearTransientFields walker re-zeroes touchedAt/seenAt on every OnCreatePlayer fire (D-28 persistence rule + Pitfall 4 mitigation)
 - [Phase 01.2]: Plan 01: deprecated log field handled per RESEARCH Discretion #4 — not seeded on new chars, not proactively purged from loaded saves (zero functional impact, simpler save compat)
+- [Phase 01.2]: Plan 03: SanityTraits.bumpCounter(path, delta) installed in 4_SanityTraits_Panel.lua — dotted-path walker with auto-vivify (Pattern 3 + Risk 3 guard); old SanityTraits.log + VALID_LOG_CATEGORIES whitelist deleted
+- [Phase 01.2]: Plan 03: ISScrollingListBox surface fully torn out from createChildren / reflowLayout / lastLogCount / formatLogEntryDisplay / refreshLogList; Phase 01.1 GAP-01..06 closures (o:noBackground, setWidth/setHeight, reflowLayout for debuffSlots, parent-dim sample, drawSanityBar, header divider, BAR_BORDER, debuff row, getSpecificPlayer, Pitfall 6) all preserved verbatim
+- [Phase 01.2]: Plan 03: Numeric readout format changed from "%d / %d (%d%%)" to "%d%%" per D-26; supersedes Phase 01.1 D-06; internal md.sanity stays raw 0-1000 (F11 console invariant preserved)
+- [Phase 01.2]: Plan 03: Runtime mod folder NOT deployed to C:\Users\joaqu\Zomboid\mods\Sanity_traits — kill handlers in 3_KillEvents.lua still call deleted SanityTraits.log; Plan 04 ships the kill-event refactor + runtime deploy as one coordinated unit
 
 ### Pending Todos
 
@@ -119,6 +124,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29T06:07:19.468Z
-Stopped at: Completed 01.2-01-PLAN.md (counters ModData migration)
+Last session: 2026-04-29T06:17:48.247Z
+Stopped at: Completed 01.2-03-PLAN.md (bumpCounter API + listbox surgery)
 Resume file: None

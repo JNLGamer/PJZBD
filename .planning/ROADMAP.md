@@ -53,12 +53,12 @@ Plans:
 **Goal:** Replace the chronological event log in the Psyche tab with a hierarchical aggregated counter view showing lifetime totals per category (zombie kills, survivor kills, stage descents, traits acquired, recoveries). Counters increment via hooks called from kill events (Phase 1), stage transitions (Phase 2), trait application (Phase 2), and recovery events (Phase 3). Render layer applies a "recency fade" â€” text is white when first seen by the user, lerps to mid-grey over a 10-real-time-second window, never disappears. Sanity displayed as percentage to user (1000 points = 100%); internal data unchanged.
 **Requirements**: None (inserted as polish/extension phase â€” D-26..D-31 are the source of truth)
 **Depends on:** Phase 01.1
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 01.2-01-PLAN.md — ModData migration: counters schema + clearTransientFields walker (D-29, D-28 persistence rule)
 - [x] 01.2-02-PLAN.md — Constants: FADE_WINDOW_MS, counter tree geometry, STAGE_DESCENT_KEY map (D-28, RESEARCH Hook 2)
-- [ ] 01.2-03-PLAN.md — Panel API surgery: bumpCounter replaces SanityTraits.log; listbox surface removed; numeric readout % (D-26, D-27)
+- [x] 01.2-03-PLAN.md — Panel API surgery: bumpCounter replaces SanityTraits.log; listbox surface removed; numeric readout % (D-26, D-27)
 - [ ] 01.2-04-PLAN.md — Kill events refactor + counter tree render + human-verify checkpoint (D-30, D-31, all regression checks)
 
 ### Phase 2: Stage Transitions
