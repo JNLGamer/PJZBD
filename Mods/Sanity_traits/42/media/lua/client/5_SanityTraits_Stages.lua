@@ -211,6 +211,18 @@ local function removeTrait(player, traitId)
     return removed
 end
 
+-- ── Phase 5 / D-58: addiction trait IDs that PERSIST through stage recovery and Broken transitions ──
+-- These IDs survive removeStageTraits's stack-pop (skipped via the gate inside the iteration below)
+-- AND survive applyBrokenStage's blanket-remove (the Plan 05-03 amend to STAGE_TRAIT_REMOVAL_ON_BROKEN
+-- omits these IDs from the list). Net behavior: addictions are the one record that survives Broken,
+-- mechanically implementing the project Core Value "permanent trait consequences that feel earned."
+-- Per D-56 AMENDED (Plan 05-01): `base:smoker` is the cigarette-addiction outcome (vanilla, not sanitymod).
+local ADDICTION_TRAIT_IDS = {
+    ["base:smoker"]                     = true,   -- cigarette addiction (vanilla; per ROADMAP / D-56 AMENDED)
+    ["sanitymod:alcoholic"]             = true,   -- defined in character_traits_sanitytraits.txt (Plan 05-02)
+    ["sanitymod:painkiller_dependent"]  = true,   -- same
+}
+
 -- ── D-39 stack-pop helper: remove only mod-applied traits for the exiting stage ──
 -- Iterates appliedTraits, finds entries matching stageKey, calls removeTrait for each.
 -- Two-pass (collect IDs then remove) so we don't mutate appliedTraits while iterating.
@@ -221,7 +233,8 @@ local function removeStageTraits(player, stageKey)
     if not md or not md.appliedTraits then return 0 end
     local toRemove = {}
     for _, entry in ipairs(md.appliedTraits) do
-        if entry.appliedAtStage == stageKey then
+        if entry.appliedAtStage == stageKey
+           and not ADDICTION_TRAIT_IDS[entry.traitId] then   -- D-58 persistence (Plan 05-03)
             toRemove[#toRemove + 1] = entry.traitId
         end
     end
@@ -413,3 +426,117 @@ function SanityTraits.evaluateStageTransitions(player)
 end
 
 print(SanityTraits.LOG_TAG .. " Stages evaluator loaded")
+
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- Phase 5 / Plan 05-03: Addiction evaluation and application helpers
+-- ════════════════════════════════════════════════════════════════════════════
+-- Public surface added by this plan:
+--   SanityTraits.evaluateAddictions(player) — called from applyStageDeltas at Hollow
+--   entry (Task 4) or from consumption event handlers in Plan 05-04.
+--
+-- Private file-local helper:
+--   applyRandomAddiction(player) — determines which addiction trait to apply based
+--   on consumption history counters.
+
+-- ── applyRandomAddiction: Private helper for selecting and applying addiction trait
+-- Determines which of the three addiction traits to apply based on consumption history.
+-- Re-entry guard: if player already has any addiction trait, returns nil immediately.
+-- If total consumption counter < ADDICTION_MIN_THRESHOLD, uses ZombRand(3) fallback.
+-- Otherwise, weighted random selection based on relative usage counts.
+-- Defensive mutex removal (base:athletic, base:obese) before applying base:smoker.
+-- Returns the applied trait ID (base:smoker, sanitymod:alcoholic, or sanitymod:painkiller_dependent),
+-- or nil if guard skipped.
+local function applyRandomAddiction(player)
+    local md = player:getModData().SanityTraits
+    if not md then return nil end
+
+    -- Re-entry guard: if any addiction trait already present, skip application
+    if player:HasTrait("base:smoker")
+       or player:HasTrait("sanitymod:alcoholic")
+       or player:HasTrait("sanitymod:painkiller_dependent") then
+        return nil
+    end
+
+    -- Consumption history counters (bumped by Plan 05-04 event handlers)
+    local cigarCount    = md.counters.consumptionCigarettes or 0
+    local alcoholCount  = md.counters.consumptionAlcohol or 0
+    local pillCount     = md.counters.consumptionPills or 0
+    local totalCount    = cigarCount + alcoholCount + pillCount
+
+    -- Random selection: weighted by usage counts, or uniform fallback if below threshold
+    local choice
+    if totalCount < SanityTraits.ADDICTION_MIN_THRESHOLD then
+        -- No clear history: random fallback (ZombRand returns 0-2)
+        choice = ZombRand(3)
+    else
+        -- Weighted random: pick based on relative usage
+        local r = ZombRand(totalCount)
+        if r < cigarCount then
+            choice = 0  -- cigarette
+        elseif r < cigarCount + alcoholCount then
+            choice = 1  -- alcohol
+        else
+            choice = 2  -- painkiller
+        end
+    end
+
+    -- Select and apply the trait
+    local traitId
+    if choice == 0 then
+        -- Cigarette addiction: base:smoker (vanilla per ROADMAP / D-56 AMENDED)
+        traitId = "base:smoker"
+        -- Defensive mutex removal: base:athletic and base:obese are incompatible with base:smoker
+        if player:HasTrait("base:athletic") then
+            player:getTraits():remove("base:athletic")
+        end
+        if player:HasTrait("base:obese") then
+            player:getTraits():remove("base:obese")
+        end
+    elseif choice == 1 then
+        -- Alcohol addiction (registered in Plan 05-02)
+        traitId = "sanitymod:alcoholic"
+    else
+        -- Painkiller addiction (registered in Plan 05-02)
+        traitId = "sanitymod:painkiller_dependent"
+    end
+
+    -- Apply via applyTrait helper (records in appliedTraits, bumps traitsAcquired counter)
+    applyTrait(player, traitId, "hollow")
+    return traitId
+end
+
+-- ── Public evaluator: SanityTraits.evaluateAddictions(player) ──────────────────
+-- Hook Contract 2 (Phase 5): Evaluates and applies addiction traits when player
+-- reaches Hollow stage and addictionProne is set to true.
+-- Called from:
+--   * applyStageDeltas at Hollow entry (Task 4 insertion)
+--   * Consumption event handlers in Plan 05-04 (timed action patches)
+--
+-- Returns the applied trait ID (base:smoker, sanitymod:alcoholic, sanitymod:painkiller_dependent),
+-- or nil if skipped (re-entry guard or addictionProne not set).
+--
+-- Side effects:
+--   * May call player:getTraits():add/remove(traitId) via applyRandomAddiction
+--   * Mutates md.appliedTraits (via applyTrait push)
+--   * Bumps SanityTraits.bumpCounter("traitsAcquired.<traitId>") via applyTrait
+--   * Prints one [SanityTraits] line to console.txt on successful apply
+function SanityTraits.evaluateAddictions(player)
+    local md = player:getModData().SanityTraits
+    if not md or not md.addictionProne then return nil end
+
+    -- Re-entry guard: if any addiction trait already present, skip
+    if player:HasTrait("base:smoker")
+       or player:HasTrait("sanitymod:alcoholic")
+       or player:HasTrait("sanitymod:painkiller_dependent") then
+        return nil
+    end
+
+    local appliedTraitId = applyRandomAddiction(player)
+    if appliedTraitId then
+        print(SanityTraits.LOG_TAG .. " addiction applied: " .. tostring(appliedTraitId))
+    end
+    return appliedTraitId
+end
+
+print(SanityTraits.LOG_TAG .. " Addiction helpers loaded")
