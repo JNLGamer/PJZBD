@@ -45,7 +45,9 @@ function ISToolTipInv:render()
     if not item then return end
 
     -- Resolve player from tooltip's character; tooltip stores it via setCharacter
-    local player = (self.character or self:getCharacter and self:getCharacter()) or getSpecificPlayer(0)
+    local player = self.character
+    if not player and self.getCharacter then player = self:getCharacter() end
+    if not player then player = getSpecificPlayer(0) end
 
     local marker = getMarkerSafely(item, player)
     if not marker or not marker.text then return end
