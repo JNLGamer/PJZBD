@@ -107,9 +107,9 @@ function SanityPanel:new(x, y, width, height, playerNum)
     -- never painted because background=false).
     o.backgroundColor = {r=0,   g=0,   b=0,   a=0.8}
     o.borderColor     = {r=0.4, g=0.4, b=0.4, a=1}
-    -- Cache counters used by render-time refresh (Pitfall 5 mitigation).
-    -- -1 forces first :render frame to detect a "change" and populate the listbox + debuff row.
-    o.lastLogCount     = -1
+    -- Cache counter for refreshDebuffRow (Pitfall 5 mitigation).
+    -- -1 forces first :render frame to detect a "change" and populate the debuff row.
+    -- (lastLogCount removed in Phase 01.2 — listbox is gone; counter tree rebuilds every frame.)
     o.lastAppliedCount = -1
     return o
 end
@@ -120,7 +120,8 @@ end
 
 -- GAP-06 closure (Plan 01.1-06 / Issue B-A): setWidth override.
 -- Routes through ISPanelJoypad super to update self.width, then reflows children
--- so self.eventLog geometry and self.debuffSlots Y positions track the new dim.
+-- so self.debuffSlots Y positions track the new dim. (Phase 01.2 / Plan 03 removed
+-- the eventLog reflow; counter tree procedural-draws from self.width directly.)
 -- Called from per-frame parent-dim sample in :render when self.parent:getWidth()
 -- differs from self.width. Also fires automatically if any future code path
 -- (or a sibling mod) calls setWidth on our panel directly.
@@ -136,26 +137,14 @@ function SanityPanel:setHeight(h)
 end
 
 -- GAP-06 closure (Plan 01.1-06 / Issue B-A): reflowLayout helper.
--- Recomputes self.eventLog geometry and self.debuffSlots Y positions from the
--- CURRENT self.width/self.height (post-setWidth/setHeight). Bar geometry is
--- procedural-drawn in :render directly from self.width — no reflow call needed
--- for the bar (it self-reflows via the parametric barX = self.width - barW - 10).
--- Magic numbers (logX=10, logY=62, slotSize=24, bottomMargin=10, barW=18) match
--- the values in :createChildren. Future tweak: hoist these to constants if more
--- methods need them.
+-- Recomputes self.debuffSlots Y positions from the CURRENT self.height
+-- (post-setHeight). Bar geometry is procedural-drawn in :render directly
+-- from self.width — no reflow call needed for the bar (it self-reflows
+-- via the parametric barX = self.width - barW - 10).
+-- Counter tree (Phase 01.2 / Plan 04) is also procedural-drawn in :render
+-- and self-reflows from current self.width/self.height — no reflow needed.
+-- (Phase 01.1's eventLog listbox reflow block removed in Phase 01.2 / Plan 03.)
 function SanityPanel:reflowLayout()
-    -- eventLog geometry (recomputed from self.width and self.height)
-    if self.eventLog then
-        local logX = 10
-        local logY = 62
-        local debuffRowY = self.height - 24 - 10
-        local logH = math.max(40, debuffRowY - logY - 8)
-        local logW = self.width - 20 - (18 + 18)   -- parametric on barW=18 (matches Plan 05 form)
-        self.eventLog:setX(logX)
-        self.eventLog:setY(logY)
-        self.eventLog:setWidth(logW)
-        self.eventLog:setHeight(logH)
-    end
     -- debuffSlots Y positions (X stays at construction-time row positions)
     if self.debuffSlots then
         local rowY = self.height - 24 - 10   -- slotSize=24, bottomMargin=10
@@ -169,32 +158,6 @@ end
 
 function SanityPanel:createChildren()
     ISPanelJoypad.createChildren(self)
-
-    -- ── Event log ISScrollingListBox child (D-21 takes most vertical space) ──
-    -- CRITICAL Pitfall 4: lifecycle order is :new -> :initialise -> :instantiate -> setFont -> addChild.
-    -- Skipping :instantiate breaks the scrollbar (Java-side UIElement never created).
-    local logX = 10
-    local logY = 62   -- GAP-03 closure (Plan 01.1-05): below header with +8px clearance for UIFont.Medium stage label descender (was 54; user observed clipped 'g' in 'Stage: Stable')
-    local debuffRowY = self.height - 24 - 10   -- 24 = slotSize, 10 = bottom margin
-    local logH = math.max(40, debuffRowY - logY - 8)
-    -- GAP-05 closure (Plan 01.1-05): logW formula is now parametric on barW.
-    -- (barW + 18) where 18 = 10 right margin + 8 gap between log and bar.
-    -- At barW=18 this is self.width - 20 - 36 (Plan 04 hardcoded 32 for barW=14).
-    -- Keeping the formula parametric so future barW tweaks don't drift logW out of sync.
-    local logW = self.width - 20 - (18 + 18)
-
-    self.eventLog = ISScrollingListBox:new(logX, logY, logW, logH)
-    self.eventLog:initialise()
-    self.eventLog:instantiate()                  -- REQUIRED — Pitfall 4
-    self.eventLog:setFont(UIFont.Small, 4)        -- 4 = itemPadY per UI-SPEC
-    -- GAP-04 closure (Plan 01.1-05): opaque slightly-lighter dark grey for visible contrast
-    -- against panel bg {r=0,g=0,b=0,a=0.8}. Was {r=0,g=0,b=0,a=0.4} which blended invisibly.
-    self.eventLog.backgroundColor = {r=0.08, g=0.08, b=0.08, a=1}
-    -- GAP-04 closure (Plan 01.1-05): vanilla ISScrollingListBox built-in 1px border render.
-    -- Verified at ProjectZomboid/media/lua/client/ISUI/ISScrollingListBox.lua line 484; default
-    -- borderColor = {r=0.4, g=0.4, b=0.4, a=0.9} (line 707) matches our panel-border visual style.
-    self.eventLog.drawBorder = true
-    self:addChild(self.eventLog)
 
     -- ── Debuff icon row (D-16): 6 reserved slots, all initially hidden ───────
     -- Slots beyond #appliedTraits stay invisible; no empty placeholder boxes drawn.
