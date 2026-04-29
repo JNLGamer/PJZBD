@@ -205,8 +205,62 @@ function ISEatFoodAction:complete()
         if unhappyDelta < -0.001 or boredomDelta < -0.001 then
             SanityTraits.applyBonusEvent(self.character, "ateWell")
         end
+        -- ── Phase 5 / D-53 / HABIT-01 cigarette consumption branch ──
+        -- EatType=Cigarettes covers Cigar / CigaretteSingle / CigaretteRolled / Cigarillo (verified food.txt:15281+).
+        -- Defensive method-existence check (self.item.getEatType) per Phase 3 monkey-patch convention.
+        -- Bumps the counter; addiction trait is selected at next Hollow descent (Plan 05-03 evaluateAddictions).
+        if self.item.getEatType and self.item:getEatType() == "Cigarettes" then
+            SanityTraits.bumpCounter("consumption.cigarettes", 1)
+        end
     end
     return result
 end
 
-print(SanityTraits.LOG_TAG .. " TimedDecay hooks: ISReadABook + ISEatFoodAction monkey-patches installed")
+-- ── Phase 5 / D-55 / HABIT-01: ISDrinkFluidAction alcohol-consumption hook ──
+-- ISDrinkFluidAction is the vanilla fluid-consumption timed action (Beer, Wine, Whiskey, etc).
+-- Source: ProjectZomboid/media/lua/shared/TimedActions/ISDrinkFluidAction.lua:104-107 (:complete)
+--       + :131 (o.fluidContainer = item:getFluidContainer() — set in :new)
+-- Detection: fluidContainer:getProperties():getAlcohol() > 0. Threshold is 0 (NOT 0.4) because
+-- habit-tracking treats ANY alcohol as alcoholic consumption (beer at 0.05 alcohol counts).
+-- The 0.4 threshold at ISHealthPanel.lua:1306 is for intoxication detection, not habit tracking.
+-- Modded alcoholic fluids that set Alcohol > 0 in their fluid def are auto-counted.
+local _orig_ISDrinkFluidAction_complete = ISDrinkFluidAction.complete
+function ISDrinkFluidAction:complete()
+    local result = _orig_ISDrinkFluidAction_complete(self)
+    if self.character
+       and self.character == getPlayer()
+       and not SanityTraits.isSystemDisabled(self.character)
+       and self.character:getModData().SanityTraits
+       and self.fluidContainer then
+        local props = self.fluidContainer:getProperties()
+        if props and props.getAlcohol and props:getAlcohol() > 0 then
+            SanityTraits.bumpCounter("consumption.alcohol", 1)
+        end
+    end
+    return result
+end
+
+-- ── Phase 5 / D-54 / HABIT-01: ISTakePillAction painkiller-consumption hook ──
+-- ISTakePillAction is the SHARED timed-action for ALL pill items (painkillers, anti-depressants,
+-- beta-blockers, sleeping pills, vitamins). Source: ProjectZomboid/media/lua/shared/TimedActions/ISTakePillAction.lua:64-70.
+-- D-54 filter: getType() == "Pills" — ONLY the vanilla painkiller (drainable.txt:1414-1427,
+-- "Tooltip = Tooltip_Painkillers, Icon = PillsPainkiller"). Excludes PillsAntiDep, PillsBeta,
+-- PillsSleepingTablets, PillsVitamins, PillsXanax — narrative-correct addiction scope.
+-- Modded painkillers (e.g. Morphine) NOT auto-counted unless they register with getType()=="Pills";
+-- expandable in Phase 6 sandbox or v2.
+local _orig_ISTakePillAction_complete = ISTakePillAction.complete
+function ISTakePillAction:complete()
+    local result = _orig_ISTakePillAction_complete(self)
+    if self.character
+       and self.character == getPlayer()
+       and not SanityTraits.isSystemDisabled(self.character)
+       and self.character:getModData().SanityTraits
+       and self.item
+       and self.item.getType
+       and self.item:getType() == "Pills" then
+        SanityTraits.bumpCounter("consumption.painkillers", 1)
+    end
+    return result
+end
+
+print(SanityTraits.LOG_TAG .. " TimedDecay hooks: ISReadABook + ISEatFoodAction + ISDrinkFluidAction + ISTakePillAction monkey-patches installed")
