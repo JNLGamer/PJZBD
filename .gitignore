@@ -21,3 +21,39 @@ modPlanner/reference/
 
 # Workshop mods downloaded for reference — not original work
 modPlanner/stolen workshop/
+
+# Secrets — never commit credentials, tokens, or local config
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.keystore
+*.jks
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.token
+*_token
+*_token.txt
+*.secret
+secrets.*
+credentials.*
+*credentials*
+*.local.json
+config.local.*
+.netrc
+.npmrc
+.pypirc
+auth.json
+gh-token.*
+
+# Logs that may leak paths or tokens
+*.log
+logs/
