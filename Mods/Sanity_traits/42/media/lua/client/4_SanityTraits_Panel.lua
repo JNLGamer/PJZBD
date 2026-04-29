@@ -181,25 +181,6 @@ end
 
 -- ── Format helpers (private to this file) ────────────────────────────────────
 
--- Format a log entry table into the listbox display string per UI-SPEC:
---   "D{day} {HH:MM} - {text} ({signedDelta})"
--- The delta is rendered in parens with a sign only when non-nil; otherwise omitted.
--- Time prefix is computed at render-time from getGameTime() (not from entry.time —
--- that ms timestamp is just for sort/dedup integrity, not display).
-local function formatLogEntryDisplay(entry)
-    local gt = getGameTime()
-    local day  = gt and gt:getDay()     or 0
-    local hour = gt and gt:getHour()    or 0
-    local min  = gt and gt:getMinutes() or 0
-    local prefix = string.format("D%d %02d:%02d", day, hour, min)
-    if entry.delta then
-        local sign = entry.delta >= 0 and "+" or ""
-        return prefix .. " - " .. entry.text .. " (" .. sign .. tostring(entry.delta) .. ")"
-    else
-        return prefix .. " - " .. entry.text
-    end
-end
-
 -- TraitFactory icon lookup with nil guard. Critical Correction 1 / Pitfall 1:
 -- vanilla does NOT ship Trait_<id>.png for our negative traits (cowardly,
 -- hemophobic, etc.). Use trait:getTexture() instead — the same call vanilla
@@ -278,33 +259,6 @@ function SanityPanel:drawSanityBar(x, y, w, h, sanity, sanityMax)
 
     -- ── Pass 4: Border (drawn last, sits over gradient + mask + ticks) ──
     self:drawRectBorder(x, y, w, h, 1, 0.6, 0.6, 0.6)   -- BAR_BORDER (lightened in Plan 05 / GAP-05 for contrast against panel border {r=0.4,g=0.4,b=0.4})
-end
-
--- ── Listbox refresh (Pitfall 5: only rebuild when #log changed) ──────────────
--- The listbox is a DERIVED VIEW of md.SanityTraits.log (the source array). FIFO
--- eviction is performed on the source array by SanityTraits.log() (Plan 02);
--- here we just rebuild from the array when its count differs from our cache.
-function SanityPanel:refreshLogList(md)
-    local logArr = md and md.log or nil
-    local cur = (logArr and #logArr) or 0
-    if cur == self.lastLogCount then return end
-
-    self.eventLog:clear()
-
-    if cur == 0 then
-        -- Empty-state placeholder per UI-SPEC Empty State / Copywriting Contract.
-        -- Backing item is nil (we never need to look it up).
-        self.eventLog:addItem("No events yet.", nil, nil)
-    else
-        -- newest at index 1; iterate in order so display preserves "newest at top"
-        for i = 1, #logArr do
-            local entry = logArr[i]
-            local label = formatLogEntryDisplay(entry)
-            self.eventLog:addItem(label, entry, nil)
-        end
-    end
-
-    self.lastLogCount = cur
 end
 
 -- ── Debuff row refresh (Pitfall 5 + Critical Correction 1 + Critical Correction 2) ──
