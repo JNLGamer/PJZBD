@@ -110,10 +110,24 @@ SanityTraits.LEGACY_APPLIEDSTAGE_COERCION = {
 --   * 3_SanityTraits_KillEvents.lua / onZombieDead, onWeaponHitXp (Plan 05)
 --   * 5_SanityTraits_Stages.lua / evaluateStageTransitions (Plan 04 — appended below)
 --
+-- B42 string-form trait membership helper. Iterates player:getCharacterTraits():getKnownTraits()
+-- using only :size() and :get(i) — the two methods proven on this collection in vanilla source
+-- (SpawnItems.lua:263-264, LastStandSetup.lua:126-127, ISPlayerStatsUI.lua:682-683). The list
+-- stores colon-prefixed trait IDs ("base:desensitized", "base:smoker", "sanitymod:alcoholic", ...).
+-- Returns false on nil player or nil traitId; never throws on unregistered IDs.
+function SanityTraits.playerHasTrait(player, traitId)
+    if not player or not traitId then return false end
+    local list = player:getCharacterTraits():getKnownTraits()
+    for i = 0, list:size() - 1 do
+        if list:get(i) == traitId then return true end
+    end
+    return false
+end
+
 -- API form: string-form per 02-01-SUMMARY.md (Wave 0 smoke test confirmed api_form=string).
 function SanityTraits.isSystemDisabled(player)
     if not player then return true end
-    return player:getTraits():contains("base:desensitized")
+    return SanityTraits.playerHasTrait(player, "base:desensitized")
 end
 
 print(SanityTraits.LOG_TAG .. " Stages constants loaded (HYSTERESIS_BUFFER="
@@ -171,12 +185,12 @@ end
 -- variants explicitly via STAGE_TRAIT_REMOVAL_ON_BROKEN — that's the only stage that does.)
 -- Returns true if a NEW application happened, false if already-present.
 local function applyTrait(player, traitId, stageKey)
-    if player:getTraits():contains(traitId) then
+    if SanityTraits.playerHasTrait(player, traitId) then
         -- Already present — could be (a) we already applied it, (b) player picked at creation,
         -- (c) another mod applied. Don't double-add and don't claim ownership.
         return false
     end
-    player:getTraits():add(traitId)
+    player:getCharacterTraits():add(traitId)
     local md = player:getModData().SanityTraits
     table.insert(md.appliedTraits, {
         traitId        = traitId,
@@ -195,8 +209,8 @@ end
 -- Returns true if engine-remove happened (player had the trait), false otherwise.
 local function removeTrait(player, traitId)
     local removed = false
-    if player:getTraits():contains(traitId) then
-        player:getTraits():remove(traitId)
+    if SanityTraits.playerHasTrait(player, traitId) then
+        player:getCharacterTraits():remove(traitId)
         removed = true
     end
     local md = player:getModData().SanityTraits
@@ -374,7 +388,7 @@ end
 -- D-36 off-switch: early-return if HasTrait("base:desensitized").
 --
 -- Side effects (per Hook Contract 1 in RESEARCH.md):
---   1. May call player:getTraits():add/remove(traitId)
+--   1. May call player:getCharacterTraits():add/remove(traitId)
 --   2. Mutates md.SanityTraits.appliedStage (always to a thematic key after first call)
 --   3. Mutates md.SanityTraits.appliedTraits (push on apply, filter on remove)
 --   4. Mutates md.SanityTraits.addictionProne (set/clear at Hollow boundary; clear at Broken)
@@ -472,11 +486,10 @@ function SanityTraits.evaluateAddictions(player)
     if SanityTraits.isSystemDisabled(player) then return end   -- D-60 defensive
 
     -- D-59 strict re-entry guard: any existing addiction blocks new application.
-    -- HasTrait on unregistered IDs returns safe-false per Phase 02-01 SUMMARY.
-    local traits = player:getTraits()
-    if traits:contains("base:smoker")
-       or traits:contains("sanitymod:alcoholic")
-       or traits:contains("sanitymod:painkiller_dependent") then
+    -- playerHasTrait iterates getKnownTraits() — safe-false on unregistered custom IDs.
+    if SanityTraits.playerHasTrait(player, "base:smoker")
+       or SanityTraits.playerHasTrait(player, "sanitymod:alcoholic")
+       or SanityTraits.playerHasTrait(player, "sanitymod:painkiller_dependent") then
         return
     end
 
