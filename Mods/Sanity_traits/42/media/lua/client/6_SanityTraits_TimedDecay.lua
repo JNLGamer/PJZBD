@@ -156,3 +156,52 @@ end
 Events.EveryDays.Add(onEveryDays)
 
 print(SanityTraits.LOG_TAG .. " TimedDecay loader: applyTimedSanityChange + applyBonusEvent ready")
+
+-- ── Bonus event hooks: monkey-patch vanilla TimedAction.complete (D-45) ───────
+-- Pattern: capture original :complete, wrap with new function that calls original
+-- FIRST (so vanilla unhappiness/boredom/skill effects land), THEN runs SanityTraits
+-- logic. Each hook honors D-36 + ModData defensive guard before calling
+-- applyBonusEvent. SP-only: we additionally check `self.character == getPlayer()`
+-- so multiplayer scenarios don't accidentally double-fire (project is SP-only,
+-- but this keeps the contract honest).
+
+-- ── Read-book bonus (D-45 +5 sanity, capped) ──
+-- ISReadABook is the vanilla skill-book/recreational-book reading action.
+-- Source: ProjectZomboid/media/lua/shared/TimedActions/ISReadABook.lua:323 (:complete signature).
+local _orig_ISReadABook_complete = ISReadABook.complete
+function ISReadABook:complete()
+    local result = _orig_ISReadABook_complete(self)
+    -- Bonus only if action actually completed AND for the local SP player AND ModData seeded.
+    if self.character
+       and self.character == getPlayer()
+       and not SanityTraits.isSystemDisabled(self.character)
+       and self.character:getModData().SanityTraits then
+        SanityTraits.applyBonusEvent(self.character, "readBook")
+    end
+    return result
+end
+
+-- ── Eat-well bonus (D-45 +5 sanity, capped; quality-food qualifier per Open Q2) ──
+-- ISEatFoodAction is the vanilla food-consumption timed action.
+-- Source: ProjectZomboid/media/lua/shared/TimedActions/ISEatFoodAction.lua:173 (:complete signature).
+-- Qualifier: only items with measurable Unhappy or Boredom REDUCTION trigger the bonus.
+-- Junk food (cigarettes, raw meat, spoiled food) has zero or positive Unhappy/Boredom changes
+-- and will NOT trigger. Threshold -0.001 catches floating-point near-zero items as "no effect".
+local _orig_ISEatFoodAction_complete = ISEatFoodAction.complete
+function ISEatFoodAction:complete()
+    local result = _orig_ISEatFoodAction_complete(self)
+    if self.character
+       and self.character == getPlayer()
+       and not SanityTraits.isSystemDisabled(self.character)
+       and self.character:getModData().SanityTraits
+       and self.item then
+        local unhappyDelta = (self.item.getUnhappyChange and self.item:getUnhappyChange()) or 0
+        local boredomDelta = (self.item.getBoredomChange and self.item:getBoredomChange()) or 0
+        if unhappyDelta < -0.001 or boredomDelta < -0.001 then
+            SanityTraits.applyBonusEvent(self.character, "ateWell")
+        end
+    end
+    return result
+end
+
+print(SanityTraits.LOG_TAG .. " TimedDecay hooks: ISReadABook + ISEatFoodAction monkey-patches installed")
