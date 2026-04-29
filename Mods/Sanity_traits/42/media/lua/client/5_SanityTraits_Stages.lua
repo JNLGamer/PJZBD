@@ -74,10 +74,8 @@ SanityTraits.STAGE_TRAIT_REMOVAL_ON_BROKEN = {
     "base:needsmoresleep",
     "base:disorganized",
     "base:pacifist",
-    -- 3. Phase 5 addiction traits (defensively included)
-    "base:smoker",
-    "sanitymod:alcoholic",
-    "sanitymod:painkiller_dependent",
+    -- 3. Phase 5 addiction traits — REMOVED in Plan 05-03 per D-58 (addictions persist past Broken).
+    --    Persistence is enforced by removeStageTraits's ADDICTION_TRAIT_IDS skip + this list omission.
 }
 
 -- ── D-44 (lazy migration): coerce legacy `appliedStage` strings to thematic keys ──
