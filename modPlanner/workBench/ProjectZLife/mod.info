@@ -1,0 +1,10 @@
+name=Project Z Life
+id=ProjectZLife
+description=Clean-room replacement of BanditsWeekOne. Pre-apocalypse life-sim RPG for Project Zomboid B42.17. Real jobs, real economy, real consequences. Absorbs Wasted, Trespassing, and Item Tags natively.
+require=Bandits2,BanditsWeekOne
+incompatible=Wasted,BanditsWeekOneTrespassing,BanditsWeekOneItemTags
+modversion=0.1.0
+pzversion=42
+versionMin=42.17.0
+author=JNLGamer
+url=
