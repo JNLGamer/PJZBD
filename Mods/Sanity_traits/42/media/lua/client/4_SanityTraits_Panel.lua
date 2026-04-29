@@ -307,6 +307,160 @@ function SanityPanel:refreshDebuffRow(md)
     self.lastAppliedCount = cur
 end
 
+-- ── Counter tree render (Phase 01.2 D-27/D-28/D-29/D-30/D-31) ────────────────
+-- Replaces the Phase 01.1 listbox event log. Pure drawText render walks a
+-- fixed-order top-level row list with subcategory recursion; per-row color is
+-- a linear lerp WHITE -> MID_GREY anchored to seenAt (D-28). seenAt is a
+-- render-layer field — set ONLY here, never by bumpCounter. touchedAt is a
+-- runtime-only field (re-zeroed on every save load by 2_ModData) so cross-
+-- restart timing (Pitfall 4) does not produce phantom flashes.
+
+local CT_WHITE_R, CT_WHITE_G, CT_WHITE_B = 1.0, 1.0, 1.0
+local CT_GREY_R,  CT_GREY_G,  CT_GREY_B  = 0.5, 0.5, 0.5
+
+-- Linear lerp WHITE -> MID_GREY over FADE_WINDOW_MS. Alpha always 1 (D-28).
+local function lerpFadeColor(t)
+    if t < 0 then t = 0 end
+    if t > 1 then t = 1 end
+    local r = CT_WHITE_R + (CT_GREY_R - CT_WHITE_R) * t
+    local g = CT_WHITE_G + (CT_GREY_G - CT_WHITE_G) * t
+    local b = CT_WHITE_B + (CT_GREY_B - CT_WHITE_B) * t
+    return r, g, b
+end
+
+-- Resolve fade color for a counter cell. Updates cell.seenAt in place if the
+-- user has not yet seen the latest touch (D-28: trigger anchored to user
+-- perception, set by render layer when touchedAt > seenAt).
+-- Returns r, g, b floats in [0..1]; alpha is always 1.
+local function resolveFadeColor(cell, now)
+    local touchedAt = cell.touchedAt or 0
+    local seenAt    = cell.seenAt    or 0
+    if touchedAt > seenAt then
+        cell.seenAt = now
+        seenAt = now
+    end
+    local age = now - seenAt
+    if age < 0 then age = 0 end
+    return lerpFadeColor(age / SanityTraits.FADE_WINDOW_MS)
+end
+
+-- Fixed iteration order for stageDescents (Pitfall 1: NEVER use pairs() for
+-- ordered display — it's non-deterministic across Lua VMs).
+local STAGE_DESCENT_ORDER = { "toShaken", "toHollow", "toNumb", "toBroken" }
+local STAGE_DESCENT_LABEL = {
+    toShaken = "to Shaken",
+    toHollow = "to Hollow",
+    toNumb   = "to Numb",
+    toBroken = "to Broken",
+}
+
+function SanityPanel:renderCounterTree(md)
+    if not md or not md.counters then return end
+    local c = md.counters
+    local now = getTimestampMs()
+
+    local Z_W   = SanityTraits.ZOMBIE_WEIGHT
+    local S_W   = SanityTraits.SURVIVOR_WEIGHT
+    local R_W   = SanityTraits.RECOVERY_WEIGHT or 0   -- Phase 3+ defines
+    local MAX   = SanityTraits.SANITY_MAX
+    local TREE_X  = SanityTraits.COUNTER_TREE_X
+    local TREE_Y  = SanityTraits.COUNTER_TREE_Y
+    local ROW_H   = SanityTraits.COUNTER_ROW_H
+    local INDENT  = SanityTraits.COUNTER_INDENT
+
+    -- Per-frame row index — drives Y position. Pitfall 3: never use a slot index;
+    -- the build sequence IS the visible-rows ordering.
+    local rowIdx = 0
+    local function emit(text, depth, cell)
+        local r, g, b = resolveFadeColor(cell, now)
+        local x = TREE_X + (depth or 0) * INDENT
+        local y = TREE_Y + rowIdx * ROW_H
+        self:drawText(text, x, y, r, g, b, 1, UIFont.Small)
+        rowIdx = rowIdx + 1
+    end
+
+    -- 1. Zombies killed (top-level, with damage delta)
+    if c.zombiesKilled and (c.zombiesKilled.count or 0) > 0 then
+        local count = c.zombiesKilled.count
+        local pct = math.floor(count * Z_W / MAX * 100)
+        emit("+ Zombies killed " .. count .. " (-" .. pct .. "%)", 0, c.zombiesKilled)
+    end
+
+    -- 2. Survivors killed (top-level, with damage delta)
+    if c.survivorsKilled and (c.survivorsKilled.count or 0) > 0 then
+        local count = c.survivorsKilled.count
+        local pct = math.floor(count * S_W / MAX * 100)
+        emit("+ Survivors killed " .. count .. " (-" .. pct .. "%)", 0, c.survivorsKilled)
+    end
+
+    -- 3. Stage descents (parent + non-zero subcategories — D-30 no delta column)
+    if c.stageDescents then
+        local total = 0
+        for _, key in ipairs(STAGE_DESCENT_ORDER) do
+            local sub = c.stageDescents[key]
+            if sub and (sub.count or 0) > 0 then total = total + sub.count end
+        end
+        if total > 0 then
+            -- Synthetic parent cell: max(touchedAt) / min(seenAt) over children
+            -- — the parent visually pulses when ANY child increments (RESEARCH Open Q #2).
+            local pTouched, pSeen = 0, math.huge
+            for _, key in ipairs(STAGE_DESCENT_ORDER) do
+                local sub = c.stageDescents[key]
+                if sub then
+                    pTouched = math.max(pTouched, sub.touchedAt or 0)
+                    if (sub.seenAt or 0) < pSeen then pSeen = sub.seenAt or 0 end
+                end
+            end
+            if pSeen == math.huge then pSeen = 0 end
+            local synth = { touchedAt = pTouched, seenAt = pSeen }
+            emit("+ Stage descents " .. total, 0, synth)
+            for _, key in ipairs(STAGE_DESCENT_ORDER) do
+                local sub = c.stageDescents[key]
+                if sub and (sub.count or 0) > 0 then
+                    emit("  - " .. STAGE_DESCENT_LABEL[key] .. " " .. sub.count, 1, sub)
+                end
+            end
+        end
+    end
+
+    -- 4. Traits acquired (parent + non-zero subcategories sorted most-recent-first — Pattern 7)
+    if c.traitsAcquired then
+        local arr = {}
+        for traitId, sub in pairs(c.traitsAcquired) do
+            if (sub.count or 0) > 0 then
+                arr[#arr + 1] = { id = traitId, cell = sub }
+            end
+        end
+        if #arr > 0 then
+            table.sort(arr, function(a, b)
+                local at = a.cell.touchedAt or 0
+                local bt = b.cell.touchedAt or 0
+                if at ~= bt then return at > bt end
+                return a.id < b.id   -- stable fallback alphabetical
+            end)
+            -- Synthetic parent cell over all non-zero children
+            local pTouched, pSeen = 0, math.huge
+            for _, e in ipairs(arr) do
+                pTouched = math.max(pTouched, e.cell.touchedAt or 0)
+                if (e.cell.seenAt or 0) < pSeen then pSeen = e.cell.seenAt or 0 end
+            end
+            if pSeen == math.huge then pSeen = 0 end
+            local synth = { touchedAt = pTouched, seenAt = pSeen }
+            emit("+ Traits acquired " .. #arr, 0, synth)
+            for _, e in ipairs(arr) do
+                emit("  - " .. e.id .. " " .. e.cell.count, 1, e.cell)
+            end
+        end
+    end
+
+    -- 5. Recoveries (top-level; Phase 3+ populates count > 0)
+    if c.recoveries and (c.recoveries.count or 0) > 0 then
+        local count = c.recoveries.count
+        local pct = math.floor(count * R_W / MAX * 100)
+        emit("+ Recoveries " .. count .. " (+" .. pct .. "%)", 0, c.recoveries)
+    end
+end
+
 -- ── Lifecycle render hooks ───────────────────────────────────────────────────
 
 function SanityPanel:prerender()
@@ -387,11 +541,12 @@ function SanityPanel:render()
     -- — the (barW + 18) margin still matches what the listbox right-edge used to be).
     self:drawRect(10, 50, self.width - 20 - (barW + 18), 1, 1, 0.4, 0.4, 0.4)
 
-    -- ── Refresh debuff row only when count changed (listbox removed in Phase 01.2) ──
-    -- Counter tree (Phase 01.2 / Plan 04) is rendered via self:renderCounterTree(md)
-    -- — that call is added in Plan 04. For this plan (Plan 03), the counter tree
-    -- is not yet drawn; the area below the header divider is intentionally empty
-    -- until Plan 04 ships.
+    -- ── Counter tree render (Phase 01.2 D-27): replaces Phase 01.1 listbox refresh ──
+    -- Drawn AFTER header divider, BEFORE refreshDebuffRow (Pattern 9 render order).
+    -- Pure drawText procedural — no widget instantiation, no per-frame cache.
+    self:renderCounterTree(md)
+
+    -- ── Refresh debuff row only when count changed ──
     self:refreshDebuffRow(md)
 
     -- ── Procedural fallback rect for any debuff slot whose trait texture is nil ──
