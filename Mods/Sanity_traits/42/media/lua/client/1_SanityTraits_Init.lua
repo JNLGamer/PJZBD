@@ -109,4 +109,10 @@ SanityTraits.RECOVERY_RATE_BY_STAGE = {
 SanityTraits.GOOD_EVENT_BONUS     = 5
 SanityTraits.GOOD_EVENT_DAILY_CAP = 30
 
+-- ── Phase 5 constants (habit tracking + addictions) ──────────────────────────
+-- D-57: minimum total consumption events to qualify for habit-based addiction selection.
+-- Below this floor, evaluateAddictions falls through to applyRandomAddiction (HABIT-03).
+-- Phase 6 will replace with `SandboxVars.SanityTraits.AddictionMinThreshold or 5`.
+SanityTraits.ADDICTION_MIN_THRESHOLD = 5
+
 print(SanityTraits.LOG_TAG .. " Init loaded (v" .. SanityTraits.VERSION .. ")")
