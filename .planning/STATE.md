@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "01.1-05: Tasks 1-4 complete, mod deployed, awaiting Task 5 human-verify checkpoint"
-last_updated: "2026-04-28T07:13:33.633Z"
-last_activity: 2026-04-28 -- Phase 01.1 execution started
+stopped_at: "01.1-06: Tasks 1-5 complete, mod deployed, awaiting Task 6 human-verify checkpoint"
+last_updated: "2026-04-29T04:25:04.436Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 9
+  completed_plans: 9
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.1 (sanity-tab-ui) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 01.1
-Last activity: 2026-04-28 -- Phase 01.1 execution started
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-04-29
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.1 P02 | 2min | 2 tasks | 2 files |
 | Phase 01.1 P03 | 3m 34s | 3 tasks | 1 files |
 | Phase 01.1 P05 | 5m 57s | 4 tasks | 2 files |
+| Phase 01.1 P06 | 10m | 5 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Recent decisions affecting current work:
 - [Phase 01.1]: Plan 05: logY 54->62 + 1px y=50 header divider (GAP-03) — UIFont.Medium descender clearance
 - [Phase 01.1]: Plan 05: listbox bgcolor opaque dark grey + drawBorder=true vanilla flag (GAP-04) — verified ISScrollingListBox.lua:484 supports drawBorder; default borderColor matches panel style, no override needed
 - [Phase 01.1]: Plan 05: CONTEXT.md NOT mutated — D-01..D-23 remain history-of-decisions; UI-SPEC.md alone carries Plan 05 amendments with explicit GAP-03/04/05 provenance (same pattern Plan 04 used)
+- [Phase 01.1]: Plan 06: o:noBackground() + setWidth/setHeight overrides + per-frame parent-dim sample (GAP-06) — vanilla doesn't propagate ISTabPanel resize, so per-frame sample is PRIMARY mechanism, override is defensive secondary
 
 ### Pending Todos
 
@@ -112,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:13:33.627Z
-Stopped at: 01.1-05: Tasks 1-4 complete, mod deployed, awaiting Task 5 human-verify checkpoint
+Last session: 2026-04-29T04:25:04.432Z
+Stopped at: 01.1-06: Tasks 1-5 complete, mod deployed, awaiting Task 6 human-verify checkpoint
 Resume file: None
