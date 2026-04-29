@@ -14,8 +14,10 @@ SanityTraits.SANITY_MIN = 0
 
 -- Kill decay weights (CORE-03, CORE-04)
 -- Phase 6 will replace these with SandboxVars; defaults must remain functional in the absence of sandbox config.
-SanityTraits.ZOMBIE_WEIGHT   = 10
-SanityTraits.SURVIVOR_WEIGHT = 30  -- 3x zombie weight per CORE-04 default
+-- Phase 8 rebalance: bumped from 10/30 -> 25/60 so a 3-zombie ambush registers as ~7.5% sanity loss
+-- instead of the previous toothless ~3%. Survivor kept at ~2.4x zombie weight per CORE-04 spirit.
+SanityTraits.ZOMBIE_WEIGHT   = 25
+SanityTraits.SURVIVOR_WEIGHT = 60
 
 -- Log tag used by all SanityTraits print() calls so console grep/filter is consistent
 SanityTraits.LOG_TAG = "[SanityTraits]"
@@ -108,6 +110,32 @@ SanityTraits.RECOVERY_RATE_BY_STAGE = {
 -- and reset on Events.EveryDays (Plan 03-02).
 SanityTraits.GOOD_EVENT_BONUS     = 5
 SanityTraits.GOOD_EVENT_DAILY_CAP = 30
+
+-- ── Phase 8 constants (distress signals from vanilla state) ─────────────────
+-- Per-tick decay contributions added on top of the per-stage base decay rate.
+-- Moodle levels are 0..4 (vanilla pattern: getMoodleLevel returns int). Multiplying
+-- the level by the constant gives that source's contribution. A panicking, bleeding,
+-- stressed character at Stable will tick down 1 + 4*PANIC + 1*STRESS + ... = ~15/tick
+-- instead of the toothless flat 1/tick; meanwhile a calm Stable character still
+-- ticks gently at 1/tick, preserving low-impact baseline.
+SanityTraits.PAIN_DECAY_PER_LEVEL    = 2   -- pain 1..4 -> +2..+8 decay
+SanityTraits.PANIC_DECAY_PER_LEVEL   = 3   -- panic 1..4 -> +3..+12 (sharper than pain)
+SanityTraits.STRESS_DECAY_PER_LEVEL  = 1   -- stress 1..4 -> +1..+4
+SanityTraits.UNHAPPY_DECAY_PER_LEVEL = 1   -- unhappy 1..4 -> +1..+4
+
+-- Health-delta acute decay (sanity lost per HP lost between ticks).
+-- BodyDamage:getHealth() returns 0..100. If health drops 20 HP between ticks
+-- (e.g. zombie scratch + bleed), HEALTH_DAMAGE_RATIO=2 -> 40 sanity loss = 4%.
+SanityTraits.HEALTH_DAMAGE_RATIO     = 2
+
+-- Sustained-low-health decay (when health is bad, not just dropping).
+SanityTraits.LOW_HEALTH_THRESHOLD    = 50  -- below this, add LOW_HEALTH_DECAY per tick
+SanityTraits.LOW_HEALTH_DECAY        = 3
+
+-- Recovery hard-block thresholds. Recovery is also gated by the existing contentment
+-- check (UNHAPPY=0 AND STRESS<3 AND BORED<3 AND PANIC=0); these are additional kills.
+SanityTraits.RECOVERY_PAIN_BLOCK     = 1   -- pain >= this level blocks recovery entirely
+SanityTraits.RECOVERY_HEALTH_BLOCK   = 70  -- health below this blocks recovery (injured = no rest)
 
 -- ── Phase 5 constants (habit tracking + addictions) ──────────────────────────
 -- D-57: minimum total consumption events to qualify for habit-based addiction selection.

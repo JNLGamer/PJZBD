@@ -194,6 +194,31 @@ function SanityPanel:createChildren()
     self.btnHistory   = mkSubtab("history",   "History",   1)
     self.btnPositives = mkSubtab("positives", "Positives", 2)
     self.btnNegatives = mkSubtab("negatives", "Negatives", 3)
+
+    -- Rule-summary tooltips on the sub-tab buttons (state stays in the tab body).
+    self.btnHistory:setTooltip("Cumulative tally of sanity events since this character was created.")
+    self.btnPositives:setTooltip(
+        "What helps sanity:\n" ..
+        "  Reading books, eating well, sleeping safely  +" ..
+            tostring(SanityTraits.GOOD_EVENT_BONUS or 5) .. " each\n" ..
+        "  Daily cap:  " .. tostring(SanityTraits.GOOD_EVENT_DAILY_CAP or 30) .. " sanity\n" ..
+        "  Passive recovery: 1-2 / tick at Stable through Numb\n" ..
+        "  Recovery requires: no panic / pain, mood OK, health >= " ..
+            tostring(SanityTraits.RECOVERY_HEALTH_BLOCK or 70) .. "%"
+    )
+    self.btnNegatives:setTooltip(
+        "What hurts sanity:\n" ..
+        "  Zombie kill: -" .. tostring(SanityTraits.ZOMBIE_WEIGHT or 25) .. "\n" ..
+        "  Survivor kill: -" .. tostring(SanityTraits.SURVIVOR_WEIGHT or 60) .. "\n" ..
+        "  Per-stage passive decay: 1-4 / tick (profession-modified)\n" ..
+        "  Distress: pain x" .. tostring(SanityTraits.PAIN_DECAY_PER_LEVEL or 2) ..
+            ", panic x" .. tostring(SanityTraits.PANIC_DECAY_PER_LEVEL or 3) ..
+            ", stress x" .. tostring(SanityTraits.STRESS_DECAY_PER_LEVEL or 1) .. " per level\n" ..
+        "  HP lost since last tick: -" .. tostring(SanityTraits.HEALTH_DAMAGE_RATIO or 2) ..
+            " sanity per HP\n" ..
+        "  Health < " .. tostring(SanityTraits.LOW_HEALTH_THRESHOLD or 50) ..
+            "%: extra -" .. tostring(SanityTraits.LOW_HEALTH_DECAY or 3) .. " / tick"
+    )
 end
 
 -- Sub-tab click handler. Stores the chosen tab key on the panel; render reads it.
@@ -606,76 +631,155 @@ function SanityPanel:render()
     end
 end
 
--- ── Positives sub-tab: "What Helps Sanity" ──────────────────────────────────
+-- ── Positives sub-tab: state-first view of what's helping right now ─────────
+-- Hover the "Positives" sub-tab button for the rules summary.
 function SanityPanel:renderPositives(md)
-    local lh, X, INDENT = 15, 10, 12
+    local lh, X, INDENT = 16, 10, 12
     local y = SanityTraits.COUNTER_TREE_Y or 82
     local function row(text, depth, r, g, b)
         self:drawText(text, X + (depth or 0) * INDENT, y, r or 0.6, g or 1.0, b or 0.6, 1, UIFont.Small)
         y = y + lh
     end
+    local function dim(text, depth)  row(text, depth, 0.55, 0.55, 0.55)  end
 
-    local bonus = SanityTraits.GOOD_EVENT_BONUS or 5
+    -- Today's good-event headroom
     local cap   = SanityTraits.GOOD_EVENT_DAILY_CAP or 30
     local used  = md.dailyBonusUsed or 0
     local remaining = math.max(0, cap - used)
-    row("Good events  +" .. bonus .. " sanity each  (daily cap " .. cap .. ")")
-    row("Reading books",   1)
-    row("Eating well",     1)
-    row("Sleeping safely", 1)
     if remaining > 0 then
-        row("Today: " .. used .. "/" .. cap .. " used  (" .. remaining .. " remaining)", 0, 0.5, 0.9, 0.5)
+        row("Today's bonus headroom:  " .. remaining .. " / " .. cap, 0, 0.5, 0.95, 0.5)
     else
-        row("Today: daily cap reached  (" .. cap .. "/" .. cap .. ")", 0, 0.7, 0.7, 0.35)
+        row("Today's bonus:  cap reached  (" .. cap .. "/" .. cap .. ")", 0, 0.85, 0.7, 0.4)
     end
-    y = y + 6
+    y = y + 4
 
-    local recovMul = SanityTraits.SANDBOX_RECOVERY_MULT or 1.0
-    row("Passive recovery  (per 10-min tick, requires good mood)")
-    local STAGE_ORDER = {"stable", "shaken", "hollow", "numb"}
-    local STAGE_LBL   = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb"}
-    for _, sk in ipairs(STAGE_ORDER) do
-        local base = SanityTraits.RECOVERY_RATE_BY_STAGE[sk] or 0
-        local eff  = (base > 0) and math.max(1, math.floor(base * recovMul + 0.5)) or 0
-        row(STAGE_LBL[sk] .. ":  +" .. eff .. " sanity/tick", 1)
+    -- Live recovery state — derived from the same gates 6_TimedDecay uses
+    local moodles  = self.char:getMoodles()
+    local painLvl  = moodles:getMoodleLevel(MoodleType.PAIN)
+    local panicLvl = moodles:getMoodleLevel(MoodleType.PANIC)
+    local stressL  = moodles:getMoodleLevel(MoodleType.STRESS)
+    local boredL   = moodles:getMoodleLevel(MoodleType.BORED)
+    local unhappy  = moodles:getMoodleLevel(MoodleType.UNHAPPY)
+    local hp       = self.char:getBodyDamage():getHealth() or 100
+
+    local block
+    if     unhappy  > 0                                       then block = "unhappy"
+    elseif panicLvl > 0                                       then block = "panicking"
+    elseif painLvl  >= (SanityTraits.RECOVERY_PAIN_BLOCK or 1) then block = "in pain"
+    elseif hp       <  (SanityTraits.RECOVERY_HEALTH_BLOCK or 70) then block = "injured"
+    elseif stressL  >= 3                                      then block = "stressed"
+    elseif boredL   >= 3                                      then block = "bored"
     end
+
+    local sanity = md.sanity or 0
+    local stageKey = SanityTraits.computeStage(sanity)
+    local STAGE_LBL = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb", broken="Broken"}
+    if block then
+        row("Recovery:  blocked  (" .. block .. ")", 0, 0.85, 0.55, 0.4)
+    else
+        local recovMul = SanityTraits.SANDBOX_RECOVERY_MULT or 1.0
+        local base = SanityTraits.RECOVERY_RATE_BY_STAGE[stageKey] or 0
+        local eff  = (base > 0) and math.max(1, math.floor(base * recovMul + 0.5)) or 0
+        if eff > 0 and sanity < SanityTraits.SANITY_MAX then
+            row("Recovery:  +" .. eff .. " / 10-min tick  (at " .. (STAGE_LBL[stageKey] or stageKey) .. ")", 0, 0.5, 1.0, 0.5)
+        elseif sanity >= SanityTraits.SANITY_MAX then
+            dim("Recovery:  full sanity  (no recovery needed)")
+        else
+            dim("Recovery:  none at this stage")
+        end
+    end
+    y = y + 4
+
+    -- Stage thresholds (so the player knows where the boundaries are)
+    local th = SanityTraits.STAGE_THRESHOLDS
+    dim("Stage thresholds:  " .. th.sad .. " / " .. th.depressed .. " / " .. th.traumatized .. " / " .. th.desensitized)
 end
 
--- ── Negatives sub-tab: "What Hurts Sanity" ───────────────────────────────────
+-- ── Negatives sub-tab: state-first view of what's hurting right now ─────────
+-- Hover the "Negatives" sub-tab button for the rules summary.
 function SanityPanel:renderNegatives(md)
-    local lh, X, INDENT = 15, 10, 12
+    local lh, X, INDENT = 16, 10, 12
     local y = SanityTraits.COUNTER_TREE_Y or 82
     local function row(text, depth, r, g, b)
         self:drawText(text, X + (depth or 0) * INDENT, y, r or 1.0, g or 0.6, b or 0.6, 1, UIFont.Small)
         y = y + lh
     end
+    local function dim(text, depth)  row(text, depth, 0.55, 0.55, 0.55)  end
 
-    local zw = SanityTraits.ZOMBIE_WEIGHT   or 10
-    local sw = SanityTraits.SURVIVOR_WEIGHT or 30
-    row("Kill events")
-    row("Zombie kill:    -" .. zw .. " sanity", 1)
-    row("Survivor kill:  -" .. sw .. " sanity", 1)
-    y = y + 6
+    -- Live distress signals from vanilla moodles + health
+    local moodles  = self.char:getMoodles()
+    local painLvl  = moodles:getMoodleLevel(MoodleType.PAIN)
+    local panicLvl = moodles:getMoodleLevel(MoodleType.PANIC)
+    local stressL  = moodles:getMoodleLevel(MoodleType.STRESS)
+    local unhappyL = moodles:getMoodleLevel(MoodleType.UNHAPPY)
+    local hp       = self.char:getBodyDamage():getHealth() or 100
 
-    local decayMul = SanityTraits.SANDBOX_DECAY_MULT or 1.0
-    local profMul  = 1.0
+    local distress = 0
+    distress = distress + painLvl   * SanityTraits.PAIN_DECAY_PER_LEVEL
+    distress = distress + panicLvl  * SanityTraits.PANIC_DECAY_PER_LEVEL
+    distress = distress + stressL   * SanityTraits.STRESS_DECAY_PER_LEVEL
+    distress = distress + unhappyL  * SanityTraits.UNHAPPY_DECAY_PER_LEVEL
+    if hp < (SanityTraits.LOW_HEALTH_THRESHOLD or 50) then
+        distress = distress + (SanityTraits.LOW_HEALTH_DECAY or 3)
+    end
+
+    -- This-tick total: base + distress (acuteHurt isn't visible here — it's per-tick delta)
+    local sanity = md.sanity or 0
+    local stageKey = SanityTraits.computeStage(sanity)
+    local STAGE_LBL = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb", broken="Broken"}
+    local baseDecay = (SanityTraits.getEffectiveDecayRate and SanityTraits.getEffectiveDecayRate(self.char, stageKey)) or 0
+    local total = baseDecay + distress
+
+    if total > 0 then
+        row("This tick:  -" .. total .. " sanity  (base " .. baseDecay
+            .. (distress > 0 and (" + distress " .. distress) or "")
+            .. ")", 0, 1.0, 0.6, 0.5)
+    else
+        dim("This tick:  no decay  (calm at " .. (STAGE_LBL[stageKey] or stageKey) .. ")")
+    end
+    y = y + 4
+
+    -- Active distress sources broken out
+    local any = false
+    if painLvl   > 0 then row("Pain L" .. painLvl   .. ":      -" .. (painLvl   * SanityTraits.PAIN_DECAY_PER_LEVEL)    .. " / tick", 1); any = true end
+    if panicLvl  > 0 then row("Panic L" .. panicLvl .. ":     -" .. (panicLvl  * SanityTraits.PANIC_DECAY_PER_LEVEL)   .. " / tick", 1); any = true end
+    if stressL   > 0 then row("Stress L" .. stressL .. ":    -" .. (stressL   * SanityTraits.STRESS_DECAY_PER_LEVEL)  .. " / tick", 1); any = true end
+    if unhappyL  > 0 then row("Unhappy L" .. unhappyL .. ":  -" .. (unhappyL  * SanityTraits.UNHAPPY_DECAY_PER_LEVEL) .. " / tick", 1); any = true end
+    if hp < (SanityTraits.LOW_HEALTH_THRESHOLD or 50) then
+        row("Low health (" .. math.floor(hp) .. "%):  -" .. (SanityTraits.LOW_HEALTH_DECAY or 3) .. " / tick", 1); any = true
+    end
+    if not any then
+        dim("No active distress sources", 1)
+    end
+    y = y + 4
+
+    -- Health line
+    local hpColor = {0.6, 0.95, 0.6}
+    if hp < 70 then hpColor = {0.95, 0.85, 0.4} end
+    if hp < 40 then hpColor = {1.0, 0.45, 0.45} end
+    row(string.format("Health: %d%%", math.floor(hp)), 0, hpColor[1], hpColor[2], hpColor[3])
+    y = y + 2
+
+    -- Profession (so the player can see why their decay multiplier is what it is)
     if SanityTraits.getProfessionProfileForPlayer then
         local profile = SanityTraits.getProfessionProfileForPlayer(self.char)
-        if profile then profMul = profile.decayMultiplier or 1.0 end
+        if profile then
+            local profName = "?"
+            local desc = self.char:getDescriptor()
+            if desc and desc:getCharacterProfession() then
+                profName = desc:getCharacterProfession():getName() or "?"
+            end
+            local mult = profile.decayMultiplier or 1.0
+            dim("Profession: " .. tostring(profName) .. "  (decay x" .. string.format("%.2f", mult)
+                .. ", bucket: " .. tostring(profile.bucket or "?") .. ")")
+        end
     end
-    row("Passive decay  (per 10-min tick)")
-    local STAGE_ORDER = {"stable", "shaken", "hollow", "numb"}
-    local STAGE_LBL   = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb"}
-    for _, sk in ipairs(STAGE_ORDER) do
-        local base = SanityTraits.DECAY_RATE_BY_STAGE[sk] or 0
-        local eff  = (base > 0) and math.max(1, math.floor(base * profMul * decayMul + 0.5)) or 0
-        row(STAGE_LBL[sk] .. ":  -" .. eff .. " sanity/tick", 1)
-    end
-    y = y + 6
+    y = y + 4
 
+    -- Stage-applied traits (renamed from the misleading "Active debuffs")
     local arr = md.appliedTraits
     if arr and #arr > 0 then
-        row("Active debuffs  (" .. #arr .. ")")
+        row("Stage-applied traits  (" .. #arr .. ")")
         for _, entry in ipairs(arr) do
             local trait = TraitFactory.getTrait(entry.traitId)
             local label = (trait and trait:getLabel()) or entry.traitId
@@ -683,11 +787,11 @@ function SanityPanel:renderNegatives(md)
             row(label .. "  (from " .. stageName .. ")", 1)
         end
     else
-        row("Active debuffs:  none", 0, 0.5, 0.5, 0.5)
+        dim("Stage-applied traits:  none yet")
     end
-    y = y + 6
+    y = y + 4
 
-    row("At Hollow stage:  addiction trait assigned")
+    -- Addiction state
     local hasTrait = SanityTraits.playerHasTrait
     local addicted =
         (hasTrait(self.char, "base:smoker")                    and "Smoker")             or
@@ -695,9 +799,9 @@ function SanityPanel:renderNegatives(md)
         (hasTrait(self.char, "sanitymod:painkiller_dependent") and "Painkiller dependent") or
         nil
     if addicted then
-        row("Current addiction:  " .. addicted, 1, 1.0, 0.75, 0.5)
+        row("Addiction:  " .. addicted, 0, 1.0, 0.75, 0.5)
     else
-        row("Current addiction:  none yet", 1, 0.5, 0.5, 0.5)
+        dim("Addiction:  none yet")
     end
 end
 

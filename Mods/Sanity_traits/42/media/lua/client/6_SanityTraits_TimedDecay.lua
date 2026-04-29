@@ -91,22 +91,56 @@ function SanityTraits.applyTimedSanityChange(player)
     end
     md.SanityTraits.wasAsleep = nowAsleep
 
-    -- ── Decay pass (D-44; profile-aware per Phase 4 / Plan 03 OCC-01) ──
-    -- HARDENED 0.7x: Stable rate stays 1 (floor-of-1 holds; max(1, floor(0.7+0.5))=1);
-    --                Numb rate becomes 3 (floor(2.8+0.5)=3, was 4); meaningful slowdown.
-    -- FRAGILE 1.3x:  Stable rate stays 1 (max(1, floor(1.3+0.5))=1);
-    --                Numb rate becomes 5 (floor(5.2+0.5)=5, was 4); ~30% faster decay.
-    -- broken stage absent from DECAY_RATE_BY_STAGE -> getEffectiveDecayRate returns 0 (Pitfall 5 short-circuit).
-    local decayRate = SanityTraits.getEffectiveDecayRate(player, stageKey)
-    if decayRate > 0 and sanity > SanityTraits.SANITY_MIN then
+    -- ── Distress signals from vanilla state (Phase 8) ──
+    -- Read pain/panic/stress/unhappy moodles + current health + health-delta since last
+    -- tick. These produce additional per-tick decay on top of the per-stage base rate.
+    -- Verified API: player:getMoodles():getMoodleLevel(MoodleType.X) — vanilla pattern at
+    -- ISHealthPanel.lua:460, ISVehicleMenu.lua:213, etc. Levels are 0..4.
+    -- Verified API: player:getBodyDamage():getHealth() — returns 0..100, vanilla at
+    -- ISHealthPanel.lua:441 ("InjuryRedTextTint = (100 - getHealth()) / 100").
+    local moodles = player:getMoodles()
+    local painLvl    = moodles:getMoodleLevel(MoodleType.PAIN)
+    local panicLvl   = moodles:getMoodleLevel(MoodleType.PANIC)
+    local stressLvl  = moodles:getMoodleLevel(MoodleType.STRESS)
+    local unhappyLvl = moodles:getMoodleLevel(MoodleType.UNHAPPY)
+    local currentHP  = player:getBodyDamage():getHealth() or 100
+
+    local distress = 0
+    distress = distress + painLvl    * SanityTraits.PAIN_DECAY_PER_LEVEL
+    distress = distress + panicLvl   * SanityTraits.PANIC_DECAY_PER_LEVEL
+    distress = distress + stressLvl  * SanityTraits.STRESS_DECAY_PER_LEVEL
+    distress = distress + unhappyLvl * SanityTraits.UNHAPPY_DECAY_PER_LEVEL
+    if currentHP < SanityTraits.LOW_HEALTH_THRESHOLD then
+        distress = distress + SanityTraits.LOW_HEALTH_DECAY
+    end
+
+    -- Health-delta acute injury: sanity loss proportional to HP dropped this tick.
+    -- Catches damage from any source (zombies, bleed, fall, infection, etc) without
+    -- needing a dedicated event hook. Stored in ModData per-character.
+    local lastHP    = md.SanityTraits.lastHealth or currentHP
+    local hpLost    = lastHP - currentHP
+    local acuteHurt = (hpLost > 0) and math.floor(hpLost * SanityTraits.HEALTH_DAMAGE_RATIO + 0.5) or 0
+    md.SanityTraits.lastHealth = currentHP
+
+    -- ── Decay pass (D-44 + Phase 8 distress; profile-aware per Phase 4 / Plan 03 OCC-01) ──
+    -- HARDENED 0.7x base rate slows; FRAGILE 1.3x speeds up. Distress + acuteHurt are
+    -- NOT scaled by profession multiplier — a hardened veteran still bleeds at the same
+    -- rate as anyone else; their advantage is the calmer baseline, not pain immunity.
+    -- broken stage absent from DECAY_RATE_BY_STAGE -> getEffectiveDecayRate returns 0.
+    local baseDecay   = SanityTraits.getEffectiveDecayRate(player, stageKey)
+    local totalDecay  = baseDecay + distress + acuteHurt
+    if totalDecay > 0 and sanity > SanityTraits.SANITY_MIN then
         local before = sanity
-        sanity = math.max(SanityTraits.SANITY_MIN, before - decayRate)
+        sanity = math.max(SanityTraits.SANITY_MIN, before - totalDecay)
         if sanity ~= before then                                   -- Pitfall 1: silent tick = no bump
             md.SanityTraits.sanity = sanity
-            print(SanityTraits.LOG_TAG .. " decay tick: rate=" .. tostring(decayRate)
+            print(SanityTraits.LOG_TAG .. " decay tick: base=" .. tostring(baseDecay)
+                .. " distress=" .. tostring(distress)
+                .. " acute=" .. tostring(acuteHurt)
+                .. " total=" .. tostring(totalDecay)
                 .. " (" .. stageKey .. ") sanity=" .. tostring(before)
                 .. " -> " .. tostring(sanity))
-            SanityTraits.bumpCounter("decay.timedTicks", -decayRate)
+            SanityTraits.bumpCounter("decay.timedTicks", -totalDecay)
             SanityTraits.evaluateStageTransitions(player)
             -- Evaluator may have descended; refresh stageKey + sanity for the recovery pass
             sanity   = md.SanityTraits.sanity
@@ -114,12 +148,17 @@ function SanityTraits.applyTimedSanityChange(player)
         end
     end
 
-    -- ── Recovery pass (D-45 contentment gate) ──
-    local moodles = player:getMoodles()
-    local content = moodles:getMoodleLevel(MoodleType.UNHAPPY) == 0
-        and moodles:getMoodleLevel(MoodleType.STRESS)  < 3
+    -- ── Recovery pass (D-45 contentment gate + Phase 8 distress block) ──
+    -- Original contentment gate: UNHAPPY=0 AND STRESS<3 AND BORED<3 AND PANIC=0
+    -- Phase 8 additions: pain at any meaningful level OR low health blocks recovery.
+    -- Rationale: a wounded character shouldn't be passively recovering sanity while
+    -- bleeding out. Reuses moodle reads from the decay pass — no extra Java calls.
+    local content = unhappyLvl == 0
+        and stressLvl  < 3
         and moodles:getMoodleLevel(MoodleType.BORED)   < 3   -- Pitfall 2: BORED, NOT BOREDOM
-        and moodles:getMoodleLevel(MoodleType.PANIC)   == 0
+        and panicLvl   == 0
+        and painLvl    < SanityTraits.RECOVERY_PAIN_BLOCK
+        and currentHP  >= SanityTraits.RECOVERY_HEALTH_BLOCK
     if content then
         local baseRecovery = SanityTraits.RECOVERY_RATE_BY_STAGE[stageKey] or 0
         local recoveryMul = SanityTraits.SANDBOX_RECOVERY_MULT or 1.0
