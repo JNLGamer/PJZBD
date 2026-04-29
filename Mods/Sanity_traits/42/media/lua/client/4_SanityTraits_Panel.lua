@@ -156,6 +156,11 @@ function SanityPanel:reflowLayout()
             end
         end
     end
+    -- Give Up button: tracks above the debuff row
+    if self.btnGiveUp then
+        local giveUpH = 20
+        self.btnGiveUp:setY(self.height - 24 - 10 - giveUpH - 4)
+    end
 end
 
 function SanityPanel:createChildren()
@@ -195,6 +200,20 @@ function SanityPanel:createChildren()
     self.btnPositives = mkSubtab("positives", "Positives", 2)
     self.btnNegatives = mkSubtab("negatives", "Negatives", 3)
 
+    -- ── Give Up button (Phase 7): only visible at Hollow/Numb/Broken ──────────
+    -- Positioned bottom-left, above the debuff slot row. Hidden by default;
+    -- render() shows/hides based on current sanity stage.
+    local giveUpH = 20
+    local giveUpY = self.height - 24 - 10 - giveUpH - 4
+    local giveUpBtn = ISButton:new(10, giveUpY, 80, giveUpH, "Give Up", self, SanityPanel.onGiveUpClick)
+    giveUpBtn:initialise()
+    giveUpBtn:instantiate()
+    giveUpBtn:setVisible(false)
+    giveUpBtn.backgroundColor = {r=0.25, g=0.05, b=0.05, a=0.9}
+    giveUpBtn.borderColor     = {r=0.6,  g=0.2,  b=0.2,  a=1}
+    self.btnGiveUp = giveUpBtn
+    self:addChild(giveUpBtn)
+
     -- Rule-summary tooltips on the sub-tab buttons (state stays in the tab body).
     self.btnHistory:setTooltip("Cumulative tally of sanity events since this character was created.")
     self.btnPositives:setTooltip(
@@ -224,6 +243,14 @@ end
 -- Sub-tab click handler. Stores the chosen tab key on the panel; render reads it.
 function SanityPanel:onSubtabClick(button)
     self.activeSubtab = button.internal
+end
+
+-- Give Up click handler (Phase 7). Delegates to 9_SanityTraits_DespairMoodle.lua.
+function SanityPanel:onGiveUpClick(button)
+    local player = getSpecificPlayer(self.playerNum)
+    if player and SanityTraits.onGiveUpClick then
+        SanityTraits.onGiveUpClick(player)
+    end
 end
 
 -- ── Format helpers (private to this file) ────────────────────────────────────
@@ -613,6 +640,14 @@ function SanityPanel:render()
 
     -- ── Refresh debuff row only when count changed ──
     self:refreshDebuffRow(md)
+
+    -- ── Give Up button: visible only at Hollow / Numb / Broken (Phase 7) ──────
+    if self.btnGiveUp then
+        local despairStage = (stageKey == "hollow" or stageKey == "numb" or stageKey == "broken")
+        if self.btnGiveUp:isVisible() ~= despairStage then
+            self.btnGiveUp:setVisible(despairStage)
+        end
+    end
 
     -- ── Procedural fallback rect for any debuff slot whose trait texture is nil ──
     -- Pitfall 1 mitigation. We draw on top of the ISImage's slot position; the ISImage

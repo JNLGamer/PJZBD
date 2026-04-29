@@ -67,6 +67,10 @@ local function onCreatePlayer(playerIndex, player)
             appliedStage  = "Healthy",
             profession    = profName or "unknown",
             appliedTraits = {},   -- D-17: list of traits this mod has applied (populated by Phase 2)
+            -- Phase 7 despair fields
+            lastSHTime              = nil,  -- game-hours timestamp of last interrupted SH attempt
+            suicidalSuppressedUntil = 0,    -- game-hours until Suicidal moodle re-shows
+            substanceUseCount       = 0,    -- cumulative substance-suppression uses (feeds Phase 5)
             counters      = {     -- Phase 01.2 D-29: aggregated counter tree
                 zombiesKilled    = { count = 0 },
                 survivorsKilled  = { count = 0 },
@@ -108,6 +112,13 @@ local function onCreatePlayer(playerIndex, player)
                 traitsAcquired   = {},
                 recoveries       = { count = 0 },
             }
+            upgraded = true
+        end
+        -- Phase 7 despair fields (idempotent upgrade for saves predating Phase 7)
+        if md.SanityTraits.lastSHTime == nil and md.SanityTraits.suicidalSuppressedUntil == nil then
+            md.SanityTraits.lastSHTime              = nil
+            md.SanityTraits.suicidalSuppressedUntil = 0
+            md.SanityTraits.substanceUseCount       = md.SanityTraits.substanceUseCount or 0
             upgraded = true
         end
         if upgraded then

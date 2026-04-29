@@ -1,4 +1,11 @@
 UI_EN = {
+    UI_SanityTraits_GiveUp = "Give Up",
+    UI_SanityTraits_SuicidalTroubled = "Troubled",
+    UI_SanityTraits_SuicidalDesperate = "Desperate",
+    UI_SanityTraits_SuicidalHollow = "Hollow (Broken)",
+    UI_SanityTraits_FirearmOption = "Firearm",
+    UI_SanityTraits_SharpOption = "Sharp object",
+    UI_SanityTraits_SharpCooldown = "Sharp object  (cooldown active)",
     UI_trait_Alcoholic = "Alcoholic",
     UI_trait_AlcoholicDesc = "When everything fell apart, the bottle helped you stand. It still does. You can't put it down.",
     UI_trait_PainkillerDependent = "Painkiller-Dependent",

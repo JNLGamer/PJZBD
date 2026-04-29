@@ -137,6 +137,27 @@ SanityTraits.LOW_HEALTH_DECAY        = 3
 SanityTraits.RECOVERY_PAIN_BLOCK     = 1   -- pain >= this level blocks recovery entirely
 SanityTraits.RECOVERY_HEALTH_BLOCK   = 70  -- health below this blocks recovery (injured = no rest)
 
+-- ── Phase 7 constants (despair mechanics) ────────────────────────────────────
+-- Thought-bubble + auto-trigger chances are per-EveryTenMinutes tick (0..99 RNG).
+-- SUBSTANCE_SUPPRESS_HOURS: how long one drink/pill suppresses the Suicidal moodle.
+-- Broken gets half suppression (apathy dulls even the numbing effect).
+-- SH_COOLDOWN_HOURS: how long the player must wait after an interrupted sharp attempt.
+SanityTraits.DESPAIR = {
+    THOUGHT_BUBBLE_CHANCE_HOLLOW = 15,
+    THOUGHT_BUBBLE_CHANCE_NUMB   = 30,
+    AUTO_TRIGGER_CHANCE_NUMB     = 5,
+    SUBSTANCE_SUPPRESS_HOURS     = 4,
+    SH_COOLDOWN_HOURS            = 24,
+}
+
+SanityTraits.THOUGHT_BUBBLES = {
+    "What's the point anymore...",
+    "Maybe it'd be easier to just...",
+    "I can't keep doing this.",
+    "Nobody would even notice.",
+    "I'm so tired...",
+}
+
 -- ── Phase 5 constants (habit tracking + addictions) ──────────────────────────
 -- D-57: minimum total consumption events to qualify for habit-based addiction selection.
 -- Below this floor, evaluateAddictions falls through to applyRandomAddiction (HABIT-03).
