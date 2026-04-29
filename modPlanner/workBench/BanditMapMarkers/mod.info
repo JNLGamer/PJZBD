@@ -1,6 +1,0 @@
-name=Bandit Map Markers
-poster=poster.png
-id=BanditMapMarkers
-description=Replaces the Bandits draggable on-screen event marker with persistent world-map symbols + a one-line chat alert + a 2-second top-right flash icon. Catches every event Bandits/BWO emits (Police, SWAT, Medic, Fireman, Bombing, Strafe, Boeing, Arson, Protests, Entertainment, Home, plus all Bandits-internal markers).
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game

@@ -1,8 +1,0 @@
-name=Bandits2 (Dummy Stub)
-poster=poster.png
-id=Bandits2
-description=Empty stub that claims to be the Bandits NPC mod (id=Bandits2). Satisfies launcher-level require=\Bandits2 dependency checks for Project Z Life patch mods during development. DOES NOT provide any Bandit.* runtime APIs — for actual Bandits gameplay, install the real Bandits NPC mod from the workshop.
-description=<BR>
-description=<RED>FOR DEV USE ONLY. Disable when you install the real Bandits mod (otherwise both will claim id=Bandits2 and the launcher may pick the wrong one).
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game

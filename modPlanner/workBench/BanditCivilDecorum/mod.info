@@ -1,6 +1,0 @@
-name=Bandit Civil Decorum
-poster=poster.png
-id=BanditCivilDecorum
-description=Caps how many NPCs can pile up at the same incident (corpse, protest, mailbox, trash, etc.). Prevents the immersion-breaking "everyone in town runs to the same dead body" effect by capping reactor count within radius. MASS-01 from the Project Z Life roadmap.
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game

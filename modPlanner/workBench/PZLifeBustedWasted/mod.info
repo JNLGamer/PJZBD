@@ -1,6 +1,0 @@
-name=PZLife Busted Wasted
-poster=poster.png
-id=PZLifeBustedWasted
-description=GTA-style BUSTED (arrested by police -> jail -> released after 1 hour) and integrates with existing Wasted (knockout -> hospital). Branches on PZLifeWanted star tier.
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game

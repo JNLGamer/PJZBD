@@ -1,6 +1,0 @@
-name=PZLife Tetris Prices
-poster=poster.png
-id=PZLifeTetrisPrices
-description=Shows item prices in tooltips for both vanilla inventory and Inventory Tetris. Reuses BWOItemTags pricing logic (encumbrance x PriceMultiplier x 10 + inflation). Green if you can afford, red if it would be theft.
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game

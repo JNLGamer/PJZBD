@@ -1,6 +1,0 @@
-name=PZLife Wanted System
-poster=poster.png
-id=PZLifeWantedSystem
-description=GTA-style 1-5 star wanted system. Foundation only — exposes the state machine and API for other Project Z Life mods (Trespassing, Busted/Wasted, Police Arrest) to consume. Star decay one-by-one, mask escape, bad-record stickiness at 3 stars.
-author=ProjectZLife
-require=please,update,to,b42,version,of,the,game
