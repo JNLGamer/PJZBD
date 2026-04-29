@@ -566,6 +566,166 @@ function SanityPanel:render()
     end
 end
 
+-- ── SanityPositivePanel: "What Helps Sanity" tab ────────────────────────────
+SanityPositivePanel = ISPanelJoypad:derive("SanityPositivePanel")
+
+function SanityPositivePanel:new(x, y, width, height, playerNum)
+    local o = ISPanelJoypad:new(x, y, width, height)
+    setmetatable(o, self); self.__index = self
+    o.playerNum = playerNum
+    o.char = getSpecificPlayer(playerNum)
+    o:noBackground()
+    return o
+end
+
+function SanityPositivePanel:initialise()
+    ISPanelJoypad.initialise(self)
+end
+
+function SanityPositivePanel:render()
+    if self.parent then
+        local pw = self.parent:getWidth()
+        local th = self.parent.tabHeight or 0
+        local ph = self.parent:getHeight() - th
+        if pw and pw > 0 and pw ~= self.width then self:setWidth(pw) end
+        if ph and ph > 0 and ph ~= self.height then self:setHeight(ph) end
+    end
+    if not self.char then
+        self.char = getSpecificPlayer(self.playerNum)
+        if not self.char then return end
+    end
+    local md = self.char:getModData().SanityTraits
+    if not md then return end
+
+    local lh, X, y, INDENT = 15, 10, 10, 12
+    local function row(text, depth, r, g, b)
+        self:drawText(text, X + (depth or 0) * INDENT, y, r or 0.6, g or 1.0, b or 0.6, 1, UIFont.Small)
+        y = y + lh
+    end
+
+    self:drawText("What Helps Sanity", X, y, 1, 1, 1, 1, UIFont.Medium)
+    y = y + lh + 4
+    self:drawRect(X, y, self.width - 20, 1, 1, 0.5, 0.5, 0.5)
+    y = y + 8
+
+    local bonus = SanityTraits.GOOD_EVENT_BONUS or 5
+    local cap   = SanityTraits.GOOD_EVENT_DAILY_CAP or 30
+    local used  = md.dailyBonusUsed or 0
+    local remaining = math.max(0, cap - used)
+    row("Good events  +" .. bonus .. " sanity each  (daily cap " .. cap .. ")")
+    row("Reading books",   1)
+    row("Eating well",     1)
+    row("Sleeping safely", 1)
+    if remaining > 0 then
+        row("Today: " .. used .. "/" .. cap .. " used  (" .. remaining .. " remaining)", 0, 0.5, 0.9, 0.5)
+    else
+        row("Today: daily cap reached  (" .. cap .. "/" .. cap .. ")", 0, 0.7, 0.7, 0.35)
+    end
+    y = y + 6
+
+    local recovMul = SanityTraits.SANDBOX_RECOVERY_MULT or 1.0
+    row("Passive recovery  (per 10-min tick, requires good mood)")
+    local STAGE_ORDER = {"stable", "shaken", "hollow", "numb"}
+    local STAGE_LBL   = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb"}
+    for _, sk in ipairs(STAGE_ORDER) do
+        local base = SanityTraits.RECOVERY_RATE_BY_STAGE[sk] or 0
+        local eff  = (base > 0) and math.max(1, math.floor(base * recovMul + 0.5)) or 0
+        row(STAGE_LBL[sk] .. ":  +" .. eff .. " sanity/tick", 1)
+    end
+end
+
+-- ── SanityNegativePanel: "What Hurts Sanity" tab ─────────────────────────────
+SanityNegativePanel = ISPanelJoypad:derive("SanityNegativePanel")
+
+function SanityNegativePanel:new(x, y, width, height, playerNum)
+    local o = ISPanelJoypad:new(x, y, width, height)
+    setmetatable(o, self); self.__index = self
+    o.playerNum = playerNum
+    o.char = getSpecificPlayer(playerNum)
+    o:noBackground()
+    return o
+end
+
+function SanityNegativePanel:initialise()
+    ISPanelJoypad.initialise(self)
+end
+
+function SanityNegativePanel:render()
+    if self.parent then
+        local pw = self.parent:getWidth()
+        local th = self.parent.tabHeight or 0
+        local ph = self.parent:getHeight() - th
+        if pw and pw > 0 and pw ~= self.width then self:setWidth(pw) end
+        if ph and ph > 0 and ph ~= self.height then self:setHeight(ph) end
+    end
+    if not self.char then
+        self.char = getSpecificPlayer(self.playerNum)
+        if not self.char then return end
+    end
+    local md = self.char:getModData().SanityTraits
+    if not md then return end
+
+    local lh, X, y, INDENT = 15, 10, 10, 12
+    local function row(text, depth, r, g, b)
+        self:drawText(text, X + (depth or 0) * INDENT, y, r or 1.0, g or 0.6, b or 0.6, 1, UIFont.Small)
+        y = y + lh
+    end
+
+    self:drawText("What Hurts Sanity", X, y, 1, 1, 1, 1, UIFont.Medium)
+    y = y + lh + 4
+    self:drawRect(X, y, self.width - 20, 1, 1, 0.5, 0.5, 0.5)
+    y = y + 8
+
+    local zw = SanityTraits.ZOMBIE_WEIGHT   or 10
+    local sw = SanityTraits.SURVIVOR_WEIGHT or 30
+    row("Kill events")
+    row("Zombie kill:    -" .. zw .. " sanity", 1)
+    row("Survivor kill:  -" .. sw .. " sanity", 1)
+    y = y + 6
+
+    local decayMul = SanityTraits.SANDBOX_DECAY_MULT or 1.0
+    local profMul  = 1.0
+    if SanityTraits.getProfessionProfileForPlayer then
+        local profile = SanityTraits.getProfessionProfileForPlayer(self.char)
+        if profile then profMul = profile.decayMultiplier or 1.0 end
+    end
+    row("Passive decay  (per 10-min tick)")
+    local STAGE_ORDER = {"stable", "shaken", "hollow", "numb"}
+    local STAGE_LBL   = {stable="Stable", shaken="Shaken", hollow="Hollow", numb="Numb"}
+    for _, sk in ipairs(STAGE_ORDER) do
+        local base = SanityTraits.DECAY_RATE_BY_STAGE[sk] or 0
+        local eff  = (base > 0) and math.max(1, math.floor(base * profMul * decayMul + 0.5)) or 0
+        row(STAGE_LBL[sk] .. ":  -" .. eff .. " sanity/tick", 1)
+    end
+    y = y + 6
+
+    local arr = md.appliedTraits
+    if arr and #arr > 0 then
+        row("Active debuffs  (" .. #arr .. ")")
+        for _, entry in ipairs(arr) do
+            local trait = TraitFactory.getTrait(entry.traitId)
+            local label = (trait and trait:getLabel()) or entry.traitId
+            local stageName = SanityTraits.STAGE_NAMES[entry.appliedAtStage or "stable"] or (entry.appliedAtStage or "?")
+            row(label .. "  (from " .. stageName .. ")", 1)
+        end
+    else
+        row("Active debuffs:  none", 0, 0.5, 0.5, 0.5)
+    end
+    y = y + 6
+
+    row("At Hollow stage:  addiction trait assigned")
+    local addicted =
+        (self.char:HasTrait("base:smoker")                    and "Smoker")             or
+        (self.char:HasTrait("sanitymod:alcoholic")            and "Alcoholic")          or
+        (self.char:HasTrait("sanitymod:painkiller_dependent") and "Painkiller dependent") or
+        nil
+    if addicted then
+        row("Current addiction:  " .. addicted, 1, 1.0, 0.75, 0.5)
+    else
+        row("Current addiction:  none yet", 1, 0.5, 0.5, 0.5)
+    end
+end
+
 -- ── ISCharacterInfoWindow:createChildren wrap (D-01, D-02, D-03) ─────────────
 -- Composability rule: never replace vanilla functions; wrap them.
 -- Pitfall 2: defensive nil guard — if vanilla source somehow loaded later (or
@@ -599,6 +759,14 @@ else
         -- tab construction at lines 127-149.
         self.panel:addView("Psyche", self.sanityView)
 
-        print(SanityTraits.LOG_TAG .. " Psyche tab installed")
+        local posView = SanityPositivePanel:new(panelX, panelY, panelW, panelH, self.playerNum)
+        posView:initialise()
+        self.panel:addView("Positives", posView)
+
+        local negView = SanityNegativePanel:new(panelX, panelY, panelW, panelH, self.playerNum)
+        negView:initialise()
+        self.panel:addView("Negatives", negView)
+
+        print(SanityTraits.LOG_TAG .. " Psyche tab installed (+ Positives + Negatives)")
     end
 end
