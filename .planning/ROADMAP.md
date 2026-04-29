@@ -2,7 +2,7 @@
 
 ## Overview
 
-The mod is built in seven phases. Phase 1 lays the scaffolding: the sanity meter stored in ModData, the kill-event hooks, and the mod.info file that makes the mod loadable. Phase 2 builds on that foundation with the full stage transition engine — all four deterioration stages, their traits, and the idempotency guards that prevent double-application. Phase 3 adds the time dimension: passive decay and happiness-driven recovery running on the game clock. Phase 4 wires in all 24 occupation psyche profiles so every profession starts and breaks differently. Phase 5 introduces the habit-tracking and addiction system that makes the Depressed stage feel personal. Phase 6 exposes every tunable threshold to sandbox settings. Phase 7 audits the whole system end-to-end and verifies it loads cleanly.
+The mod is built in seven phases. Phase 1 lays the scaffolding: the sanity meter stored in ModData, the kill-event hooks, and the mod.info file that makes the mod loadable. Phase 2 builds on that foundation with the full stage transition engine â€” all four deterioration stages, their traits, and the idempotency guards that prevent double-application. Phase 3 adds the time dimension: passive decay and happiness-driven recovery running on the game clock. Phase 4 wires in all 24 occupation psyche profiles so every profession starts and breaks differently. Phase 5 introduces the habit-tracking and addiction system that makes the Depressed stage feel personal. Phase 6 exposes every tunable threshold to sandbox settings. Phase 7 audits the whole system end-to-end and verifies it loads cleanly.
 
 ## Phases
 
@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Killing a zombie reduces `modData.sanity` by the configured zombie weight; console logging confirms the event fired
   4. Killing a survivor reduces `modData.sanity` by the heavier survivor weight; the value is persisted after save/reload
 **Plans**: 3 plans
-  - [x] 01-01-PLAN.md — Mod skeleton, mod.info, namespace bootstrap (DEF-04)
-  - [x] 01-02-PLAN.md — OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
-  - [x] 01-03-PLAN.md — Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
+  - [x] 01-01-PLAN.md â€” Mod skeleton, mod.info, namespace bootstrap (DEF-04)
+  - [x] 01-02-PLAN.md â€” OnCreatePlayer ModData init with profession-aware starting sanity (CORE-01, CORE-02)
+  - [x] 01-03-PLAN.md â€” Kill event handlers (OnZombieDead, OnWeaponHitXp) with sanity decrement + checkpoint (CORE-03, CORE-04)
 
 ### Phase 01.1: Sanity Tab UI (INSERTED)
 
@@ -44,9 +44,22 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 6/6 plans complete
 
 Plans:
-- [x] 01.1-01-PLAN.md — Constants and ModData upgrade: STAGE_THRESHOLDS, STAGE_NAMES, computeStage, idempotent log/appliedTraits seed (D-08, D-09, D-10, D-11, D-17)
-- [x] 01.1-02-PLAN.md — Logger API and kill event wiring: SanityTraits.log() in new 4_SanityTraits_Panel.lua, plus updated kill handlers (D-12, D-13, D-14, D-15)
-- [x] 01.1-03-PLAN.md — SanityPanel class and ISCharacterInfoWindow wrap: bar + ticks + numeric + stage label + event log listbox + 6-slot debuff row (D-01..D-07, D-16, D-18..D-23)
+- [x] 01.1-01-PLAN.md â€” Constants and ModData upgrade: STAGE_THRESHOLDS, STAGE_NAMES, computeStage, idempotent log/appliedTraits seed (D-08, D-09, D-10, D-11, D-17)
+- [x] 01.1-02-PLAN.md â€” Logger API and kill event wiring: SanityTraits.log() in new 4_SanityTraits_Panel.lua, plus updated kill handlers (D-12, D-13, D-14, D-15)
+- [x] 01.1-03-PLAN.md â€” SanityPanel class and ISCharacterInfoWindow wrap: bar + ticks + numeric + stage label + event log listbox + 6-slot debuff row (D-01..D-07, D-16, D-18..D-23)
+
+### Phase 01.2: Aggregated Activity View (INSERTED)
+
+**Goal:** Replace the chronological event log in the Psyche tab with a hierarchical aggregated counter view showing lifetime totals per category (zombie kills, survivor kills, stage descents, traits acquired, recoveries). Counters increment via hooks called from kill events (Phase 1), stage transitions (Phase 2), trait application (Phase 2), and recovery events (Phase 3). Render layer applies a "recency fade" â€” text is white when first seen by the user, lerps to mid-grey over a 10-real-time-second window, never disappears. Sanity displayed as percentage to user (1000 points = 100%); internal data unchanged.
+**Requirements**: None (inserted as polish/extension phase â€” D-26..D-31 are the source of truth)
+**Depends on:** Phase 01.1
+**Plans:** 1/4 plans executed
+
+Plans:
+- [ ] 01.2-01-PLAN.md — ModData migration: counters schema + clearTransientFields walker (D-29, D-28 persistence rule)
+- [x] 01.2-02-PLAN.md — Constants: FADE_WINDOW_MS, counter tree geometry, STAGE_DESCENT_KEY map (D-28, RESEARCH Hook 2)
+- [ ] 01.2-03-PLAN.md — Panel API surgery: bumpCounter replaces SanityTraits.log; listbox surface removed; numeric readout % (D-26, D-27)
+- [ ] 01.2-04-PLAN.md — Kill events refactor + counter tree render + human-verify checkpoint (D-30, D-31, all regression checks)
 
 ### Phase 2: Stage Transitions
 **Goal**: Characters progress through all four deterioration stages with correct traits applied and removed, with no double-application
@@ -55,7 +68,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. A character whose sanity crosses the Sad threshold gains `base:insomniac` and `base:cowardly`; crossing it twice does not duplicate the traits
   2. A character at Depressed stage has the Depressed trait set applied; recovering above the Sad threshold removes them and the character returns to Sad
-  3. A character at Traumatized stage cannot recover — the meter is clamped and Traumatized traits persist
+  3. A character at Traumatized stage cannot recover â€” the meter is clamped and Traumatized traits persist
   4. A character at Desensitized stage has all prior emotional-reaction traits removed and `base:desensitized` applied; the `appliedStage` guard in ModData prevents re-entry
 **Plans**: TBD
 
@@ -74,7 +87,7 @@ Plans:
 **Requirements**: OCC-01, OCC-02, OCC-03, OCC-04, OCC-05
 **Success Criteria** (what must be TRUE):
   1. A Veteran character starts the game with `base:desensitized` applied and stage progression logic suppressed; no further stage checks fire for this character
-  2. A Police Officer character uses a 0.7–0.85× kill modifier; the same kill event reduces sanity less than it would for an Unemployed character
+  2. A Police Officer character uses a 0.7â€“0.85Ã— kill modifier; the same kill event reduces sanity less than it would for an Unemployed character
   3. All 24 professions are present in the psyche profile table; an unknown/modded profession falls back to the civilian baseline without error
 **Plans**: TBD
 
@@ -102,7 +115,7 @@ Plans:
 ### Phase 7: Polish and Integration
 **Goal**: The complete system runs end-to-end without Lua errors, all vanilla trait IDs are verified correct for B42, and the mod is ready to ship
 **Depends on**: Phase 6
-**Requirements**: (integration audit — all prior requirements validated together)
+**Requirements**: (integration audit â€” all prior requirements validated together)
 **Success Criteria** (what must be TRUE):
   1. A full playthrough from new game through all four stages completes without a single Lua error in the console
   2. All vanilla trait IDs used by the mod (`base:insomniac`, `base:cowardly`, `base:hemophobic`, `base:slowhealer`, `base:weakstomach`, `base:out of shape`, `base:needsmoresleep`, `base:disorganized`, `base:pacifist`, `base:desensitized`, `base:smoker`) are confirmed present in B42 game files
@@ -111,7 +124,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 â†’ 2 â†’ 3 â†’ 4 â†’ 5 â†’ 6 â†’ 7
 
 Note: Phases 3 and 4 both depend on Phase 1/2 respectively and can be planned in parallel, but execute sequentially per phase number.
 

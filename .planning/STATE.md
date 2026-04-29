@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "01.1-06: Tasks 1-5 complete, mod deployed, awaiting Task 6 human-verify checkpoint"
-last_updated: "2026-04-29T04:25:04.436Z"
-last_activity: 2026-04-29
+stopped_at: Completed 01.2-02-PLAN.md (init constants)
+last_updated: "2026-04-29T06:05:39.752Z"
+last_activity: 2026-04-29 -- Phase 01.2 execution started
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 13
+  completed_plans: 10
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** A character's sanity must visibly decay with realistic occupation-specific flavor, culminating in permanent trait consequences that feel earned and irreversible.
-**Current focus:** Phase 01.1 — sanity-tab-ui
+**Current focus:** Phase 01.2 — aggregated-activity-view
 
 ## Current Position
 
-Phase: 01.1 (sanity-tab-ui) — EXECUTING
-Plan: 2 of 5
-Status: Ready to execute
-Last activity: 2026-04-29
+Phase: 01.2 (aggregated-activity-view) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 01.2
+Last activity: 2026-04-29 -- Phase 01.2 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.1 P03 | 3m 34s | 3 tasks | 1 files |
 | Phase 01.1 P05 | 5m 57s | 4 tasks | 2 files |
 | Phase 01.1 P06 | 10m | 5 tasks | 2 files |
+| Phase 01.2 P02 | 3m | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,7 @@ Recent decisions affecting current work:
 - [Phase 01.1]: Plan 05: listbox bgcolor opaque dark grey + drawBorder=true vanilla flag (GAP-04) — verified ISScrollingListBox.lua:484 supports drawBorder; default borderColor matches panel style, no override needed
 - [Phase 01.1]: Plan 05: CONTEXT.md NOT mutated — D-01..D-23 remain history-of-decisions; UI-SPEC.md alone carries Plan 05 amendments with explicit GAP-03/04/05 provenance (same pattern Plan 04 used)
 - [Phase 01.1]: Plan 06: o:noBackground() + setWidth/setHeight overrides + per-frame parent-dim sample (GAP-06) — vanilla doesn't propagate ISTabPanel resize, so per-frame sample is PRIMARY mechanism, override is defensive secondary
+- [Phase 01.2]: Plan 02: 6 namespace constants added to 1_SanityTraits_Init.lua (FADE_WINDOW_MS=10000, COUNTER_ROW_H/INDENT=14, COUNTER_TREE_X=10, COUNTER_TREE_Y=62, STAGE_DESCENT_KEY map); Phase 01.1 constants preserved verbatim (regression-safe); LOG_MAX_ENTRIES kept as dead code per D-27 migration approach
 
 ### Pending Todos
 
@@ -114,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29T04:25:04.432Z
-Stopped at: 01.1-06: Tasks 1-5 complete, mod deployed, awaiting Task 6 human-verify checkpoint
+Last session: 2026-04-29T06:05:39.746Z
+Stopped at: Completed 01.2-02-PLAN.md (init constants)
 Resume file: None
