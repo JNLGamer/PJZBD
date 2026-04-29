@@ -79,4 +79,34 @@ SanityTraits.STAGE_DESCENT_KEY = {
     broken = "toBroken",
 }
 
+-- ── Phase 3 constants (timed decay + recovery + bonus events) ─────────────────
+-- D-44: per-stage decay rate; D-45: per-stage recovery rate.
+-- Both tables key on the SAME thematic stage names as STAGE_NAMES / computeStage output
+-- ("stable"|"shaken"|"hollow"|"numb"|"broken"). Lookups use `tbl[computeStage(sanity)] or 0`
+-- so a "broken" key (handler short-circuits via isSystemDisabled before this point in
+-- practice) yields 0 and the caller no-ops. Phase 6 will replace literals with
+-- SandboxVars.SanityTraits.DecayRate<Stage> / RecoveryRate<Stage> / GoodEventBonus / GoodEventDailyCap.
+
+SanityTraits.DECAY_RATE_BY_STAGE = {
+    stable = 1,
+    shaken = 2,
+    hollow = 3,
+    numb   = 4,
+    -- broken: handler short-circuits via isSystemDisabled; "or 0" defends in caller
+}
+
+SanityTraits.RECOVERY_RATE_BY_STAGE = {
+    stable = 1,
+    shaken = 2,
+    hollow = 2,
+    numb   = 2,
+    -- broken: handler short-circuits; "or 0" defends in caller
+}
+
+-- D-45: bonus events (sleep / eat / read / entertainment-reserved). Per-event sanity gain
+-- and per-in-game-day cumulative cap. Cap is enforced inline in applyBonusEvent (Plan 03-03)
+-- and reset on Events.EveryDays (Plan 03-02).
+SanityTraits.GOOD_EVENT_BONUS     = 5
+SanityTraits.GOOD_EVENT_DAILY_CAP = 30
+
 print(SanityTraits.LOG_TAG .. " Init loaded (v" .. SanityTraits.VERSION .. ")")
