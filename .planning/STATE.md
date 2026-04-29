@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01.2-02-PLAN.md (init constants)
-last_updated: "2026-04-29T06:05:39.752Z"
-last_activity: 2026-04-29 -- Phase 01.2 execution started
+stopped_at: Completed 01.2-01-PLAN.md (counters ModData migration)
+last_updated: "2026-04-29T06:07:19.473Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.2 (aggregated-activity-view) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 01.2
-Last activity: 2026-04-29 -- Phase 01.2 execution started
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-04-29
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.1 P05 | 5m 57s | 4 tasks | 2 files |
 | Phase 01.1 P06 | 10m | 5 tasks | 2 files |
 | Phase 01.2 P02 | 3m | 1 tasks | 1 files |
+| Phase 01.2 P01 | 2m 16s | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,8 @@ Recent decisions affecting current work:
 - [Phase 01.1]: Plan 05: CONTEXT.md NOT mutated — D-01..D-23 remain history-of-decisions; UI-SPEC.md alone carries Plan 05 amendments with explicit GAP-03/04/05 provenance (same pattern Plan 04 used)
 - [Phase 01.1]: Plan 06: o:noBackground() + setWidth/setHeight overrides + per-frame parent-dim sample (GAP-06) — vanilla doesn't propagate ISTabPanel resize, so per-frame sample is PRIMARY mechanism, override is defensive secondary
 - [Phase 01.2]: Plan 02: 6 namespace constants added to 1_SanityTraits_Init.lua (FADE_WINDOW_MS=10000, COUNTER_ROW_H/INDENT=14, COUNTER_TREE_X=10, COUNTER_TREE_Y=62, STAGE_DESCENT_KEY map); Phase 01.1 constants preserved verbatim (regression-safe); LOG_MAX_ENTRIES kept as dead code per D-27 migration approach
+- [Phase 01.2]: Plan 01: counters schema seeded on new chars + idempotently added on loaded saves; clearTransientFields walker re-zeroes touchedAt/seenAt on every OnCreatePlayer fire (D-28 persistence rule + Pitfall 4 mitigation)
+- [Phase 01.2]: Plan 01: deprecated log field handled per RESEARCH Discretion #4 — not seeded on new chars, not proactively purged from loaded saves (zero functional impact, simpler save compat)
 
 ### Pending Todos
 
@@ -116,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29T06:05:39.746Z
-Stopped at: Completed 01.2-02-PLAN.md (init constants)
+Last session: 2026-04-29T06:07:19.468Z
+Stopped at: Completed 01.2-01-PLAN.md (counters ModData migration)
 Resume file: None
