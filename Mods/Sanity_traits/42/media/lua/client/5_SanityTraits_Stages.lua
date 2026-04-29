@@ -320,9 +320,11 @@ local function applyStageDeltas(player, prevStage, targetStage)
                         added = added + 1
                     end
                 end
-                -- D-34: at Hollow entry, set addictionProne (Phase 5 reads this flag)
+                -- D-34: at Hollow entry, set addictionProne (legacy/documentation flag — Phase 5 does NOT read it).
+                -- D-57 / HABIT-02 (Plan 05-03): SanityTraits.evaluateAddictions reads counters.consumption.* and applies the addiction trait.
                 if stageKey == "hollow" then
                     md.addictionProne = true
+                    SanityTraits.evaluateAddictions(player)
                 end
                 -- D-29 (Phase 01.2 hook): descent counter
                 local descentKey = SanityTraits.STAGE_DESCENT_KEY[stageKey]
@@ -425,118 +427,91 @@ function SanityTraits.evaluateStageTransitions(player)
         .. " removed=" .. tostring(removed))
 end
 
-print(SanityTraits.LOG_TAG .. " Stages evaluator loaded")
-
-
 -- ════════════════════════════════════════════════════════════════════════════
--- Phase 5 / Plan 05-03: Addiction evaluation and application helpers
+-- Phase 5 / Plan 05-03: Addiction selection helpers (D-57 + D-59 + D-60)
+-- HABIT-02 (dominant-habit selection), HABIT-03 (random fallback), HABIT-05 (re-entry guard).
 -- ════════════════════════════════════════════════════════════════════════════
--- Public surface added by this plan:
---   SanityTraits.evaluateAddictions(player) — called from applyStageDeltas at Hollow
---   entry (Task 4) or from consumption event handlers in Plan 05-04.
 --
--- Private file-local helper:
---   applyRandomAddiction(player) — determines which addiction trait to apply based
---   on consumption history counters.
+-- Both helpers MUST live in this file: applyTrait is file-local (line 175 above) and is called
+-- via lexical scope. Defining these helpers in a separate file would either require exposing
+-- applyTrait as SanityTraits.applyTrait (cross-file change) or duplicating its idempotent + appliedTraits-push
+-- logic (brittle). Same-file is canonical (Pitfall 1 from RESEARCH).
+--
+-- Per D-56 AMENDED (Plan 05-01): cigarette addiction outcome is vanilla `base:smoker` (NOT sanitymod:smoker_dependent).
+-- The 3 addiction IDs are: base:smoker (cigarettes), sanitymod:alcoholic (alcohol), sanitymod:painkiller_dependent (painkillers).
 
--- ── applyRandomAddiction: Private helper for selecting and applying addiction trait
--- Determines which of the three addiction traits to apply based on consumption history.
--- Re-entry guard: if player already has any addiction trait, returns nil immediately.
--- If total consumption counter < ADDICTION_MIN_THRESHOLD, uses ZombRand(3) fallback.
--- Otherwise, weighted random selection based on relative usage counts.
--- Defensive mutex removal (base:athletic, base:obese) before applying base:smoker.
--- Returns the applied trait ID (base:smoker, sanitymod:alcoholic, or sanitymod:painkiller_dependent),
--- or nil if guard skipped.
-local function applyRandomAddiction(player)
-    local md = player:getModData().SanityTraits
-    if not md then return nil end
+-- ── D-57 random fallback (HABIT-03) ──────────────────────────────────────────
+-- Called when total consumption < ADDICTION_MIN_THRESHOLD or no consumption history exists.
+-- Picks one of the 3 addiction trait IDs uniformly at random via ZombRand (save-deterministic).
+-- Pitfall 6: ZombRand returns 0..N-1; Lua arrays are 1-indexed → use `[ZombRand(N) + 1]`.
+function SanityTraits.applyRandomAddiction(player)
+    if SanityTraits.isSystemDisabled(player) then return end   -- D-60 defensive
 
-    -- Re-entry guard: if any addiction trait already present, skip application
-    if player:HasTrait("base:smoker")
-       or player:HasTrait("sanitymod:alcoholic")
-       or player:HasTrait("sanitymod:painkiller_dependent") then
-        return nil
-    end
-
-    -- Consumption history counters (bumped by Plan 05-04 event handlers)
-    local cigarCount    = md.counters.consumptionCigarettes or 0
-    local alcoholCount  = md.counters.consumptionAlcohol or 0
-    local pillCount     = md.counters.consumptionPills or 0
-    local totalCount    = cigarCount + alcoholCount + pillCount
-
-    -- Random selection: weighted by usage counts, or uniform fallback if below threshold
-    local choice
-    if totalCount < SanityTraits.ADDICTION_MIN_THRESHOLD then
-        -- No clear history: random fallback (ZombRand returns 0-2)
-        choice = ZombRand(3)
-    else
-        -- Weighted random: pick based on relative usage
-        local r = ZombRand(totalCount)
-        if r < cigarCount then
-            choice = 0  -- cigarette
-        elseif r < cigarCount + alcoholCount then
-            choice = 1  -- alcohol
-        else
-            choice = 2  -- painkiller
-        end
-    end
-
-    -- Select and apply the trait
-    local traitId
-    if choice == 0 then
-        -- Cigarette addiction: base:smoker (vanilla per ROADMAP / D-56 AMENDED)
-        traitId = "base:smoker"
-        -- Defensive mutex removal: base:athletic and base:obese are incompatible with base:smoker
-        if player:HasTrait("base:athletic") then
-            player:getTraits():remove("base:athletic")
-        end
-        if player:HasTrait("base:obese") then
-            player:getTraits():remove("base:obese")
-        end
-    elseif choice == 1 then
-        -- Alcohol addiction (registered in Plan 05-02)
-        traitId = "sanitymod:alcoholic"
-    else
-        -- Painkiller addiction (registered in Plan 05-02)
-        traitId = "sanitymod:painkiller_dependent"
-    end
-
-    -- Apply via applyTrait helper (records in appliedTraits, bumps traitsAcquired counter)
-    applyTrait(player, traitId, "hollow")
-    return traitId
+    local pool = { "base:smoker", "sanitymod:alcoholic", "sanitymod:painkiller_dependent" }
+    local addictionId = pool[ZombRand(3) + 1]
+    applyTrait(player, addictionId, "hollow")
+    print(SanityTraits.LOG_TAG .. " addiction (random fallback): " .. addictionId)
 end
 
--- ── Public evaluator: SanityTraits.evaluateAddictions(player) ──────────────────
--- Hook Contract 2 (Phase 5): Evaluates and applies addiction traits when player
--- reaches Hollow stage and addictionProne is set to true.
--- Called from:
---   * applyStageDeltas at Hollow entry (Task 4 insertion)
---   * Consumption event handlers in Plan 05-04 (timed action patches)
+-- ── D-57 dominant-habit selection (HABIT-02 + HABIT-05) ──────────────────────
+-- Called from applyStageDeltas Hollow-descent step (line ~316, after md.addictionProne = true).
+-- Reads counters.consumption.{cigarettes,alcohol,painkillers}.count, picks the dominant
+-- habit, applies the corresponding addiction trait via applyTrait (file-local, lexical scope).
 --
--- Returns the applied trait ID (base:smoker, sanitymod:alcoholic, sanitymod:painkiller_dependent),
--- or nil if skipped (re-entry guard or addictionProne not set).
+-- D-59 strict re-entry: if ANY addiction trait is already present, no further work.
+-- Defense in depth: applyTrait's HasTrait short-circuit at line 176 also guards.
+-- HABIT-05 honored by both layers.
 --
--- Side effects:
---   * May call player:getTraits():add/remove(traitId) via applyRandomAddiction
---   * Mutates md.appliedTraits (via applyTrait push)
---   * Bumps SanityTraits.bumpCounter("traitsAcquired.<traitId>") via applyTrait
---   * Prints one [SanityTraits] line to console.txt on successful apply
+-- Tie-break order: cigarettes > alcohol > painkillers (D-57 reasoning: cigarettes are the
+-- most-consumed PZ item by player base; deterministic priority avoids save-scumming).
+--
+-- D-37 invariant: this function performs ZERO sanity arithmetic. It only reads counters
+-- and calls applyTrait. The single math.max in this body operates on counter values
+-- (not sanity), so it does NOT affect the strict no-clamping invariant.
 function SanityTraits.evaluateAddictions(player)
-    local md = player:getModData().SanityTraits
-    if not md or not md.addictionProne then return nil end
+    if SanityTraits.isSystemDisabled(player) then return end   -- D-60 defensive
 
-    -- Re-entry guard: if any addiction trait already present, skip
+    -- D-59 strict re-entry guard: any existing addiction blocks new application.
+    -- HasTrait on unregistered IDs returns safe-false per Phase 02-01 SUMMARY.
     if player:HasTrait("base:smoker")
        or player:HasTrait("sanitymod:alcoholic")
        or player:HasTrait("sanitymod:painkiller_dependent") then
-        return nil
+        return
     end
 
-    local appliedTraitId = applyRandomAddiction(player)
-    if appliedTraitId then
-        print(SanityTraits.LOG_TAG .. " addiction applied: " .. tostring(appliedTraitId))
+    local md = player:getModData().SanityTraits
+    if not md or not md.counters or not md.counters.consumption then
+        -- No consumption history (counter slots not yet vivified). HABIT-03 fallback.
+        SanityTraits.applyRandomAddiction(player)
+        return
     end
-    return appliedTraitId
+
+    -- Per Phase 01.2 D-29 schema: counters.<category>.<key>.count
+    local cig = (md.counters.consumption.cigarettes  and md.counters.consumption.cigarettes.count)  or 0
+    local alc = (md.counters.consumption.alcohol     and md.counters.consumption.alcohol.count)     or 0
+    local pkr = (md.counters.consumption.painkillers and md.counters.consumption.painkillers.count) or 0
+
+    local total = cig + alc + pkr
+    if total < SanityTraits.ADDICTION_MIN_THRESHOLD then
+        SanityTraits.applyRandomAddiction(player)
+        return
+    end
+
+    -- Dominant: highest counter wins; tie-break priority = cigarettes > alcohol > painkillers.
+    -- math.max here operates on counter values, NOT sanity — D-37 invariant unaffected.
+    local addictionId
+    local maxCount = math.max(cig, alc, pkr)
+    if cig == maxCount then
+        addictionId = "base:smoker"
+    elseif alc == maxCount then
+        addictionId = "sanitymod:alcoholic"
+    else
+        addictionId = "sanitymod:painkiller_dependent"
+    end
+
+    applyTrait(player, addictionId, "hollow")
+    print(SanityTraits.LOG_TAG .. " addiction selected: " .. addictionId
+        .. " (cigarettes=" .. cig .. ", alcohol=" .. alc .. ", painkillers=" .. pkr .. ")")
 end
 
-print(SanityTraits.LOG_TAG .. " Addiction helpers loaded")
+print(SanityTraits.LOG_TAG .. " Stages evaluator loaded")
