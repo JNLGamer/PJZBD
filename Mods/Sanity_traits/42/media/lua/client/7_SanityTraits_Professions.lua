@@ -135,8 +135,10 @@ function SanityTraits.getEffectiveDecayRate(player, stageKey)
     local base = SanityTraits.DECAY_RATE_BY_STAGE[stageKey] or 0
     if base <= 0 then return 0 end  -- preserves "broken" stage short-circuit (table absence -> 0)
     local profile = SanityTraits.getProfessionProfileForPlayer(player)
-    local mul = profile.decayMultiplier or 1.0
-    return math.max(1, math.floor(base * mul + 0.5))
+    local profMul = profile.decayMultiplier or 1.0
+    -- Phase 6 / CORE-07: sandbox override multiplier composes with profession multiplier.
+    local sandboxMul = SanityTraits.SANDBOX_DECAY_MULT or 1.0
+    return math.max(1, math.floor(base * profMul * sandboxMul + 0.5))
 end
 
 print(SanityTraits.LOG_TAG .. " 7_SanityTraits_Professions loaded: 26 profile rows (25 vanilla + _default)")

@@ -115,4 +115,41 @@ SanityTraits.GOOD_EVENT_DAILY_CAP = 30
 -- Phase 6 will replace with `SandboxVars.SanityTraits.AddictionMinThreshold or 5`.
 SanityTraits.ADDICTION_MIN_THRESHOLD = 5
 
+-- ── Phase 6: Sandbox overrides (CORE-07) ─────────────────────────────────────
+-- On OnGameStart, swap hardcoded defaults with SandboxVars.SanityTraits.* values
+-- when present. Old saves that predate sandbox config fall through to defaults
+-- because SandboxVars.SanityTraits is nil or its fields are nil — `or default`
+-- preserves prior behavior. Decay/recovery sandbox values are MULTIPLIERS applied
+-- to the per-stage rate tables (not stage-specific values), keeping the sandbox
+-- screen compact while still letting players tune pacing.
+SanityTraits.SANDBOX_DECAY_MULT    = 1.0
+SanityTraits.SANDBOX_RECOVERY_MULT = 1.0
+
+function SanityTraits.applySandboxOverrides()
+    local sv = SandboxVars and SandboxVars.SanityTraits
+    if not sv then
+        print(SanityTraits.LOG_TAG .. " sandbox: SandboxVars.SanityTraits not present, using defaults")
+        return
+    end
+
+    SanityTraits.ZOMBIE_WEIGHT          = sv.ZombieWeight          or SanityTraits.ZOMBIE_WEIGHT
+    SanityTraits.SURVIVOR_WEIGHT        = sv.SurvivorWeight        or SanityTraits.SURVIVOR_WEIGHT
+    SanityTraits.SANDBOX_DECAY_MULT     = sv.DecayMultiplier       or 1.0
+    SanityTraits.SANDBOX_RECOVERY_MULT  = sv.RecoveryMultiplier    or 1.0
+
+    if sv.SadThreshold          then SanityTraits.STAGE_THRESHOLDS.sad          = sv.SadThreshold end
+    if sv.DepressedThreshold    then SanityTraits.STAGE_THRESHOLDS.depressed    = sv.DepressedThreshold end
+    if sv.TraumatizedThreshold  then SanityTraits.STAGE_THRESHOLDS.traumatized  = sv.TraumatizedThreshold end
+
+    print(SanityTraits.LOG_TAG .. " sandbox applied: ZW=" .. tostring(SanityTraits.ZOMBIE_WEIGHT)
+        .. " SW=" .. tostring(SanityTraits.SURVIVOR_WEIGHT)
+        .. " decayMult=" .. tostring(SanityTraits.SANDBOX_DECAY_MULT)
+        .. " recoveryMult=" .. tostring(SanityTraits.SANDBOX_RECOVERY_MULT)
+        .. " thresholds=[" .. tostring(SanityTraits.STAGE_THRESHOLDS.sad)
+        .. "/" .. tostring(SanityTraits.STAGE_THRESHOLDS.depressed)
+        .. "/" .. tostring(SanityTraits.STAGE_THRESHOLDS.traumatized) .. "]")
+end
+
+Events.OnGameStart.Add(SanityTraits.applySandboxOverrides)
+
 print(SanityTraits.LOG_TAG .. " Init loaded (v" .. SanityTraits.VERSION .. ")")

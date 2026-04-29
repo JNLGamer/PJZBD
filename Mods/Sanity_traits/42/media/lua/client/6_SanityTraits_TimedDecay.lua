@@ -121,7 +121,9 @@ function SanityTraits.applyTimedSanityChange(player)
         and moodles:getMoodleLevel(MoodleType.BORED)   < 3   -- Pitfall 2: BORED, NOT BOREDOM
         and moodles:getMoodleLevel(MoodleType.PANIC)   == 0
     if content then
-        local recoveryRate = SanityTraits.RECOVERY_RATE_BY_STAGE[stageKey] or 0
+        local baseRecovery = SanityTraits.RECOVERY_RATE_BY_STAGE[stageKey] or 0
+        local recoveryMul = SanityTraits.SANDBOX_RECOVERY_MULT or 1.0
+        local recoveryRate = (baseRecovery > 0) and math.max(1, math.floor(baseRecovery * recoveryMul + 0.5)) or 0
         if recoveryRate > 0 and sanity < SanityTraits.SANITY_MAX then
             local before = sanity
             sanity = math.min(SanityTraits.SANITY_MAX, before + recoveryRate)
