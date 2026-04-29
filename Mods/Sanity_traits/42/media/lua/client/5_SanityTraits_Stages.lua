@@ -328,7 +328,12 @@ local function applyStageDeltas(player, prevStage, targetStage)
         for i = prev, target + 1, -1 do
             local exitingStageKey = STAGE_ORDER[i]
             local thresholdKey = STAGE_THRESHOLD_KEY[exitingStageKey]
-            local entryThreshold = thresholdKey and SanityTraits.STAGE_THRESHOLDS[thresholdKey]
+            -- Phase 4 / Plan 03 (OCC-01): profile-shifted entry threshold per D-50 Edit 2.
+            -- HARDENED's -150 shift means Shaken-exit at sanity > 600+50=650 (was 800);
+            -- FRAGILE's +75 shift means Shaken-exit at sanity > 825+50=875 (was 800).
+            -- HYSTERESIS_BUFFER (+50) at line 332 below stays a flat constant, not threshold-derived.
+            local thresholds = SanityTraits.getStageThresholds(player)
+            local entryThreshold = thresholdKey and thresholds[thresholdKey]
             if entryThreshold and sanity <= (entryThreshold + SanityTraits.HYSTERESIS_BUFFER) then
                 -- HYSTERESIS BLOCK: pin appliedStage at exitingStageKey and stop.
                 -- (Pitfall 4: comparison is `<=` for block, equivalent to `> threshold+buffer`
