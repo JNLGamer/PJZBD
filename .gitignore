@@ -1,28 +1,24 @@
-# Game installation files — only track mod source code
-ProjectZomboid/
-
-# OS
+# local
+*.log
+logs/
 .DS_Store
 Thumbs.db
-
-# Editor / tooling
 .vscode/
 .idea/
 
-# Internal planning, design notes, and AI tooling artifacts
-.planning/
-.claude/
-.agents/
-CLAUDE.md
-AGENTS.md
-
-# Local-only reference material that may include third-party copyrighted sources
+# external / not authored here
+ProjectZomboid/
 modPlanner/reference/
-
-# Workshop mods downloaded for reference — not original work
 modPlanner/stolen workshop/
 
-# Secrets — never commit credentials, tokens, or local config
+# scratch
+.[Pp][Ll][Aa][Nn][Nn][Ii][Nn][Gg]/
+.[Cc][Ll][Aa][Uu][Dd][Ee]/
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+.[Aa][Gg][Ee][Nn][Tt][Ss]/
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+
+# never commit
 .env
 .env.*
 !.env.example
@@ -53,7 +49,3 @@ config.local.*
 .pypirc
 auth.json
 gh-token.*
-
-# Logs that may leak paths or tokens
-*.log
-logs/
