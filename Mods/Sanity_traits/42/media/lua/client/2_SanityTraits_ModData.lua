@@ -68,20 +68,53 @@ local function onCreatePlayer(playerIndex, player)
         print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
             .. " startingSanity=" .. tostring(startSanity))
     else
-        -- Loaded save. Idempotently upgrade missing fields (Phase 1 -> 01.1 migration).
+        -- Loaded save. Idempotently upgrade missing fields (Phase 1 -> 01.1 -> 01.2 migration).
         -- Do NOT touch sanity, appliedStage, or profession — those persist as-is.
+        -- Old `log` field on Phase 01.1 saves is left in place (CONTEXT D-27 + RESEARCH
+        -- Discretion #4): zero functional impact, no proactive purge needed.
         local upgraded = false
-        if md.SanityTraits.log == nil then
-            md.SanityTraits.log = {}
-            upgraded = true
-        end
         if md.SanityTraits.appliedTraits == nil then
             md.SanityTraits.appliedTraits = {}
             upgraded = true
         end
-        if upgraded then
-            print(SanityTraits.LOG_TAG .. " OnCreatePlayer: upgraded existing save with log/appliedTraits fields")
+        if md.SanityTraits.counters == nil then
+            md.SanityTraits.counters = {
+                zombiesKilled    = { count = 0 },
+                survivorsKilled  = { count = 0 },
+                stageDescents    = {
+                    toShaken  = { count = 0 },
+                    toHollow  = { count = 0 },
+                    toNumb    = { count = 0 },
+                    toBroken  = { count = 0 },
+                },
+                traitsAcquired   = {},
+                recoveries       = { count = 0 },
+            }
+            upgraded = true
         end
+        if upgraded then
+            print(SanityTraits.LOG_TAG .. " OnCreatePlayer: upgraded existing save with appliedTraits/counters fields")
+        end
+    end
+
+    -- Re-zero transient fade fields on every load (Pitfall 4 mitigation).
+    -- getTimestampMs() is real-world wall-clock since process launch — NOT save-stable.
+    -- Persisting touchedAt/seenAt across save/reload would cross the cross-restart
+    -- timing boundary and trigger phantom fade animations on the first frame after load.
+    -- Recursive walker zeroes both fields under every counter leaf cell.
+    local function clearTransientFields(t)
+        if type(t) ~= "table" then return end
+        if t.count ~= nil then
+            -- Leaf cell: clear the runtime-only timestamps.
+            t.touchedAt = 0
+            t.seenAt    = 0
+        else
+            -- Intermediate node (e.g. stageDescents, traitsAcquired): recurse.
+            for _, sub in pairs(t) do clearTransientFields(sub) end
+        end
+    end
+    if md.SanityTraits and md.SanityTraits.counters then
+        clearTransientFields(md.SanityTraits.counters)
     end
 end
 
