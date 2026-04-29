@@ -741,10 +741,10 @@ function SanityPanel:renderNegatives(md)
 
     -- Active distress sources broken out
     local any = false
-    if painLvl   > 0 then row("Pain L" .. painLvl   .. ":      -" .. (painLvl   * SanityTraits.PAIN_DECAY_PER_LEVEL)    .. " / tick", 1); any = true end
-    if panicLvl  > 0 then row("Panic L" .. panicLvl .. ":     -" .. (panicLvl  * SanityTraits.PANIC_DECAY_PER_LEVEL)   .. " / tick", 1); any = true end
-    if stressL   > 0 then row("Stress L" .. stressL .. ":    -" .. (stressL   * SanityTraits.STRESS_DECAY_PER_LEVEL)  .. " / tick", 1); any = true end
-    if unhappyL  > 0 then row("Unhappy L" .. unhappyL .. ":  -" .. (unhappyL  * SanityTraits.UNHAPPY_DECAY_PER_LEVEL) .. " / tick", 1); any = true end
+    if painLvl   > 0 then row("Pain (lvl "    .. painLvl  .. "):  -" .. (painLvl   * SanityTraits.PAIN_DECAY_PER_LEVEL)    .. " / tick", 1); any = true end
+    if panicLvl  > 0 then row("Panic (lvl "   .. panicLvl .. "):  -" .. (panicLvl  * SanityTraits.PANIC_DECAY_PER_LEVEL)   .. " / tick", 1); any = true end
+    if stressL   > 0 then row("Stress (lvl "  .. stressL  .. "):  -" .. (stressL   * SanityTraits.STRESS_DECAY_PER_LEVEL)  .. " / tick", 1); any = true end
+    if unhappyL  > 0 then row("Unhappy (lvl " .. unhappyL .. "):  -" .. (unhappyL  * SanityTraits.UNHAPPY_DECAY_PER_LEVEL) .. " / tick", 1); any = true end
     if hp < (SanityTraits.LOW_HEALTH_THRESHOLD or 50) then
         row("Low health (" .. math.floor(hp) .. "%):  -" .. (SanityTraits.LOW_HEALTH_DECAY or 3) .. " / tick", 1); any = true
     end
@@ -752,13 +752,6 @@ function SanityPanel:renderNegatives(md)
         dim("No active distress sources", 1)
     end
     y = y + 4
-
-    -- Health line
-    local hpColor = {0.6, 0.95, 0.6}
-    if hp < 70 then hpColor = {0.95, 0.85, 0.4} end
-    if hp < 40 then hpColor = {1.0, 0.45, 0.45} end
-    row(string.format("Health: %d%%", math.floor(hp)), 0, hpColor[1], hpColor[2], hpColor[3])
-    y = y + 2
 
     -- Profession (so the player can see why their decay multiplier is what it is)
     if SanityTraits.getProfessionProfileForPlayer then
