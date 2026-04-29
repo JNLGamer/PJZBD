@@ -120,3 +120,293 @@ end
 
 print(SanityTraits.LOG_TAG .. " Stages constants loaded (HYSTERESIS_BUFFER="
     .. tostring(SanityTraits.HYSTERESIS_BUFFER) .. ")")
+
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- Phase 2 / Plan 04: Stage transition evaluator + private helpers
+-- ════════════════════════════════════════════════════════════════════════════
+-- Public surface added by this plan:
+--   SanityTraits.evaluateStageTransitions(player) — called by kill handlers (Plan 05)
+--   and future Phase 3 decay tick.
+--
+-- Private file-local helpers below (applyTrait, removeTrait, removeStageTraits,
+-- applyBrokenStage, applyStageDeltas, coerceLegacyAppliedStage). They use the
+-- public data tables defined earlier in this file.
+
+-- Stage ordering for cascade traversal (descent walks STAGE_ORDER[prev+1..target];
+-- recovery walks reverse: STAGE_ORDER[prev..target+1]).
+local STAGE_ORDER = { "stable", "shaken", "hollow", "numb", "broken" }
+local STAGE_INDEX = { stable = 1, shaken = 2, hollow = 3, numb = 4, broken = 5 }
+
+-- Maps thematic stageKey -> the legacy STAGE_THRESHOLDS key for this stage's entry threshold.
+-- Used in the recovery hysteresis check: exit threshold = STAGE_THRESHOLDS[STAGE_THRESHOLD_KEY[stage]] + HYSTERESIS_BUFFER.
+-- "stable" intentionally absent — recovering UP to stable has no entry threshold.
+local STAGE_THRESHOLD_KEY = {
+    shaken = "sad",          -- 750 + 50 = 800 to exit Shaken → Stable
+    hollow = "depressed",    -- 500 + 50 = 550 to exit Hollow → Shaken
+    numb   = "traumatized",  -- 250 + 50 = 300 to exit Numb   → Hollow
+    broken = "desensitized", -- 50  + 50 = 100 -- intentionally never used (D-32: Broken→Numb impossible because D-36 disables system)
+}
+
+-- ── D-44 (lazy migration): coerce legacy `appliedStage` strings ──────────────
+-- Phase 1 seeded "Healthy" before Phase 01.1's thematic rename. First evaluator call after
+-- each load normalizes the field. If the value is already thematic, returns as-is. Unknown
+-- values fall back to computeStage(currentSanity) — recovers from any corruption gracefully.
+local function coerceLegacyAppliedStage(rawAppliedStage, currentSanity)
+    -- Already a thematic key (defined in STAGE_NAMES from 1_SanityTraits_Init.lua)
+    if rawAppliedStage and SanityTraits.STAGE_NAMES[rawAppliedStage] then
+        return rawAppliedStage
+    end
+    -- Legacy string with known mapping?
+    local coerced = SanityTraits.LEGACY_APPLIEDSTAGE_COERCION[rawAppliedStage]
+    if coerced then return coerced end
+    -- Unknown / corrupted: recompute from current sanity. Loses transition history but
+    -- produces a self-consistent state.
+    return SanityTraits.computeStage(currentSanity)
+end
+
+-- ── DEF-02 / DEF-03 idempotent helpers (Pattern 2) ───────────────────────────
+-- applyTrait: idempotent add. Skips both the engine-add AND the appliedTraits push if
+-- the player ALREADY has the trait — this means a player-picked trait at character
+-- creation does NOT get marked as mod-applied, so the lower-stage recovery stack-pop
+-- (Pattern 6) won't remove it. (D-33 Broken blanket-removal removes player-picked
+-- variants explicitly via STAGE_TRAIT_REMOVAL_ON_BROKEN — that's the only stage that does.)
+-- Returns true if a NEW application happened, false if already-present.
+local function applyTrait(player, traitId, stageKey)
+    if player:HasTrait(traitId) then
+        -- Already present — could be (a) we already applied it, (b) player picked at creation,
+        -- (c) another mod applied. Don't double-add and don't claim ownership.
+        return false
+    end
+    player:getTraits():add(traitId)
+    local md = player:getModData().SanityTraits
+    table.insert(md.appliedTraits, {
+        traitId        = traitId,
+        appliedAtStage = stageKey,
+        appliedAtTime  = getTimestampMs(),
+    })
+    -- D-29 (Phase 01.2 hook): individual trait acquisition counter
+    SanityTraits.bumpCounter("traitsAcquired." .. traitId, 1)
+    return true
+end
+
+-- removeTrait: idempotent remove. ALWAYS prunes appliedTraits entries with matching traitId,
+-- even if HasTrait was false (handles case where we never recorded it but the trait exists,
+-- or D-33 blanket-remove of a player-picked trait that has no appliedTraits record).
+-- Does NOT bump any counter — D-39: stage-trait-removals are silent on counter side.
+-- Returns true if engine-remove happened (player had the trait), false otherwise.
+local function removeTrait(player, traitId)
+    local removed = false
+    if player:HasTrait(traitId) then
+        player:getTraits():remove(traitId)
+        removed = true
+    end
+    local md = player:getModData().SanityTraits
+    if md and md.appliedTraits then
+        -- Reverse iteration so table.remove doesn't mess with indexes
+        for i = #md.appliedTraits, 1, -1 do
+            if md.appliedTraits[i].traitId == traitId then
+                table.remove(md.appliedTraits, i)
+            end
+        end
+    end
+    return removed
+end
+
+-- ── D-39 stack-pop helper: remove only mod-applied traits for the exiting stage ──
+-- Iterates appliedTraits, finds entries matching stageKey, calls removeTrait for each.
+-- Two-pass (collect IDs then remove) so we don't mutate appliedTraits while iterating.
+-- Player-picked traits (which were never pushed to appliedTraits per applyTrait's guard)
+-- are NOT removed by this helper — only by D-33 blanket-removal at Broken.
+local function removeStageTraits(player, stageKey)
+    local md = player:getModData().SanityTraits
+    if not md or not md.appliedTraits then return 0 end
+    local toRemove = {}
+    for _, entry in ipairs(md.appliedTraits) do
+        if entry.appliedAtStage == stageKey then
+            toRemove[#toRemove + 1] = entry.traitId
+        end
+    end
+    local count = 0
+    for _, traitId in ipairs(toRemove) do
+        if removeTrait(player, traitId) then count = count + 1 end
+    end
+    return count
+end
+
+-- ── D-33 + D-40 Broken application: blanket-removal then desensitized apply ──
+-- Three-source removal (per RESEARCH Pattern 7):
+--   1. Canonical conflict list (vanilla MutuallyExclusiveTraits)
+--   2. Every prior-stage trait the mod applied (or player picked — see D-33)
+--   3. Phase 5 addiction traits (defensive — DEF-03 guard makes calls safe even
+--      when sanitymod:* IDs are unregistered)
+--
+-- All three sources are pre-merged into SanityTraits.STAGE_TRAIT_REMOVAL_ON_BROKEN
+-- (defined earlier in this file by Plan 02). Iterate that list.
+--
+-- After removal: apply base:desensitized via applyTrait (which records the entry
+-- in appliedTraits with appliedAtStage="broken"). bumpCounter("stageDescents.toBroken").
+-- The next event tick will see HasTrait("base:desensitized")=true → isSystemDisabled
+-- returns true → kill handlers + evaluator early-return forever (D-40 monument).
+--
+-- Returns count of traits actually removed by the three-source blanket pass.
+--
+-- NOTE on Pitfall 5 (defensive pcall): Wave 0 (02-01-SUMMARY.md) confirmed
+-- defensive_pcall_needed=false (HasTrait on unregistered IDs returns false cleanly,
+-- no Java warning). Direct removeTrait call below is safe.
+local function applyBrokenStage(player)
+    local md = player:getModData().SanityTraits
+    local removed = 0
+    for _, traitId in ipairs(SanityTraits.STAGE_TRAIT_REMOVAL_ON_BROKEN) do
+        if removeTrait(player, traitId) then removed = removed + 1 end
+    end
+    -- Clear addictionProne (defensive — Hollow's path may have set it; at Broken
+    -- there's no path to addiction since system disables next tick).
+    md.addictionProne = false
+    -- Apply base:desensitized via the standard helper so:
+    --   * appliedTraits entry is recorded with appliedAtStage="broken" (debuff row shows the lone monument icon)
+    --   * traitsAcquired.base:desensitized counter bumps once (D-29 hook + D-40 monument)
+    applyTrait(player, "base:desensitized", "broken")
+    -- D-29 hook: descent counter for this stage (the LAST counter-bump for this character;
+    -- isSystemDisabled trips on the next tick → no further bumpCounter calls forever).
+    SanityTraits.bumpCounter("stageDescents.toBroken", 1)
+    return removed
+end
+
+-- ── Cascade walker (Pattern 4 + 5) ───────────────────────────────────────────
+-- Walks from prevStage to targetStage. Direction determined by STAGE_INDEX comparison.
+--   Descent (target > prev): walk prev+1..target, applying each stage's traits, bumping
+--                            descent counter, setting addictionProne at Hollow entry,
+--                            calling applyBrokenStage at Broken (special path).
+--   Recovery (target < prev): walk prev..target+1 in REVERSE, removing each stage's
+--                             mod-applied traits (Pattern 6), clearing addictionProne
+--                             at Hollow exit, applying hysteresis check on each step.
+--                             Hysteresis failure pins appliedStage at the current
+--                             exiting stage (recovery stops short of the computed target).
+--
+-- Returns (added, removed) counts for the console.txt receipt.
+-- May override md.appliedStage if hysteresis blocks recovery (caller checks).
+local function applyStageDeltas(player, prevStage, targetStage)
+    local prev   = STAGE_INDEX[prevStage]
+    local target = STAGE_INDEX[targetStage]
+    local md     = player:getModData().SanityTraits
+    local sanity = md.sanity
+    local added, removed = 0, 0
+
+    if target > prev then
+        -- DESCENT: walk prev+1 → target inclusive
+        for i = prev + 1, target do
+            local stageKey = STAGE_ORDER[i]
+            if stageKey == "broken" then
+                -- D-40 monument path: blanket-removal + desensitized apply
+                removed = removed + applyBrokenStage(player)
+                added = added + 1   -- the desensitized apply counts as +1
+            else
+                -- Generic descent: apply this stage's trait set
+                local traits = SanityTraits.STAGE_TRAITS[stageKey] or {}
+                for _, traitId in ipairs(traits) do
+                    if applyTrait(player, traitId, stageKey) then
+                        added = added + 1
+                    end
+                end
+                -- D-34: at Hollow entry, set addictionProne (Phase 5 reads this flag)
+                if stageKey == "hollow" then
+                    md.addictionProne = true
+                end
+                -- D-29 (Phase 01.2 hook): descent counter
+                local descentKey = SanityTraits.STAGE_DESCENT_KEY[stageKey]
+                if descentKey then
+                    SanityTraits.bumpCounter("stageDescents." .. descentKey, 1)
+                end
+            end
+        end
+    elseif target < prev then
+        -- RECOVERY: walk prev → target+1 in REVERSE (removing each stage as we exit it).
+        -- Hysteresis (D-32): for each step "exit stage X to recover toward stage X-1",
+        -- check that sanity > entryThresholdOf(X) + HYSTERESIS_BUFFER. If not, stop.
+        -- Pin appliedStage at the stage we're currently still in.
+        for i = prev, target + 1, -1 do
+            local exitingStageKey = STAGE_ORDER[i]
+            local thresholdKey = STAGE_THRESHOLD_KEY[exitingStageKey]
+            local entryThreshold = thresholdKey and SanityTraits.STAGE_THRESHOLDS[thresholdKey]
+            if entryThreshold and sanity <= (entryThreshold + SanityTraits.HYSTERESIS_BUFFER) then
+                -- HYSTERESIS BLOCK: pin appliedStage at exitingStageKey and stop.
+                -- (Pitfall 4: comparison is `<=` for block, equivalent to `> threshold+buffer`
+                --  for allow. Sanity exactly equal to threshold+buffer does NOT exit.)
+                md.appliedStage = exitingStageKey
+                return added, removed
+            end
+            -- Hysteresis passed — actually exit this stage
+            removed = removed + removeStageTraits(player, exitingStageKey)
+            -- D-39: at Hollow exit, clear addictionProne (whether or not addiction trait was applied;
+            -- if it was, removeStageTraits above already removed it as part of stack-pop)
+            if exitingStageKey == "hollow" then
+                md.addictionProne = false
+            end
+            -- D-39: NO bumpCounter on recovery (recoveries counter is Phase 3's territory)
+        end
+    end
+    -- target == prev case is handled by the no-op early-return in the caller (no work here)
+    return added, removed
+end
+
+-- ── Public evaluator (Hook Contract 1) ───────────────────────────────────────
+-- Reconciles md.SanityTraits.appliedStage with the stage implied by md.SanityTraits.sanity.
+-- Idempotent: same sanity, same stage → no-op (but normalizes legacy appliedStage strings).
+-- D-36 off-switch: early-return if HasTrait("base:desensitized").
+--
+-- Side effects (per Hook Contract 1 in RESEARCH.md):
+--   1. May call player:getTraits():add/remove(traitId)
+--   2. Mutates md.SanityTraits.appliedStage (always to a thematic key after first call)
+--   3. Mutates md.SanityTraits.appliedTraits (push on apply, filter on remove)
+--   4. Mutates md.SanityTraits.addictionProne (set/clear at Hollow boundary; clear at Broken)
+--   5. Calls SanityTraits.bumpCounter("stageDescents.<key>") on each descent step
+--   6. Calls SanityTraits.bumpCounter("traitsAcquired.<traitId>") on each new apply
+--   7. Prints one [SanityTraits] stage transition line per evaluator-call-with-work
+--   8. Does NOT mutate md.SanityTraits.sanity (caller owns sanity arithmetic)
+--
+-- Callers:
+--   * Plan 05: 3_SanityTraits_KillEvents.lua / onZombieDead, onWeaponHitXp (after sanity decrement)
+--   * Future Phase 3: EveryTenMinutes decay handler (after each drain pass)
+function SanityTraits.evaluateStageTransitions(player)
+    -- D-36 master invariant. Catches Veteran (vanilla GrantedTraits), char-creation desensitized
+    -- pick, modded "hardened" professions, and the Broken-application path (after evaluator
+    -- applies base:desensitized, subsequent ticks return immediately).
+    if SanityTraits.isSystemDisabled(player) then return end
+
+    local md = player:getModData().SanityTraits
+    if not md then return end   -- defensive: shouldn't happen post-OnCreatePlayer
+
+    local currentSanity  = md.sanity
+    local prevStageKey   = coerceLegacyAppliedStage(md.appliedStage, currentSanity)
+    local targetStageKey = SanityTraits.computeStage(currentSanity)
+
+    if prevStageKey == targetStageKey then
+        -- No-op: stage hasn't changed. Normalize legacy "Healthy" → "stable" if needed
+        -- (one-time per character; subsequent calls have already-thematic value).
+        if md.appliedStage ~= prevStageKey then
+            md.appliedStage = prevStageKey
+        end
+        return
+    end
+
+    -- Cascade through intermediate stages (descent or recovery — direction handled inside)
+    local added, removed = applyStageDeltas(player, prevStageKey, targetStageKey)
+
+    -- If applyStageDeltas hit a hysteresis block during recovery, it already pinned
+    -- md.appliedStage to the still-exiting stage and returned early. Detect that case
+    -- by re-reading md.appliedStage: if it's already different from prevStageKey, the
+    -- hysteresis-pin happened. Otherwise, set it to the computed target.
+    if md.appliedStage == prevStageKey then
+        md.appliedStage = targetStageKey
+    end
+    -- (else: applyStageDeltas already pinned it to the hysteresis-stop stage; respect that)
+
+    print(SanityTraits.LOG_TAG .. " stage transition: " .. tostring(prevStageKey)
+        .. " -> " .. tostring(md.appliedStage)
+        .. " (sanity=" .. tostring(currentSanity) .. ")"
+        .. " traits added=" .. tostring(added)
+        .. " removed=" .. tostring(removed))
+end
+
+print(SanityTraits.LOG_TAG .. " Stages evaluator loaded")
