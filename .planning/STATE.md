@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01.2-03-PLAN.md (bumpCounter API + listbox surgery)
-last_updated: "2026-04-29T06:18:09.768Z"
+stopped_at: Completed 01.2-04-PLAN.md (renderCounterTree + bumpCounter wire — Phase 01.2 last code plan; awaiting human-verify)
+last_updated: "2026-04-29T06:27:26.885Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 9
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 01.2 (aggregated-activity-view) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-29
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01.2 P02 | 3m | 1 tasks | 1 files |
 | Phase 01.2 P01 | 2m 16s | 2 tasks | 1 files |
 | Phase 01.2 P03 | 5m 13s | 4 tasks | 1 files |
+| Phase 01.2 P04 | 3m 45s | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,10 @@ Recent decisions affecting current work:
 - [Phase 01.2]: Plan 03: ISScrollingListBox surface fully torn out from createChildren / reflowLayout / lastLogCount / formatLogEntryDisplay / refreshLogList; Phase 01.1 GAP-01..06 closures (o:noBackground, setWidth/setHeight, reflowLayout for debuffSlots, parent-dim sample, drawSanityBar, header divider, BAR_BORDER, debuff row, getSpecificPlayer, Pitfall 6) all preserved verbatim
 - [Phase 01.2]: Plan 03: Numeric readout format changed from "%d / %d (%d%%)" to "%d%%" per D-26; supersedes Phase 01.1 D-06; internal md.sanity stays raw 0-1000 (F11 console invariant preserved)
 - [Phase 01.2]: Plan 03: Runtime mod folder NOT deployed to C:\Users\joaqu\Zomboid\mods\Sanity_traits — kill handlers in 3_KillEvents.lua still call deleted SanityTraits.log; Plan 04 ships the kill-event refactor + runtime deploy as one coordinated unit
+- [Phase 01.2]: Plan 04: Synthetic parent fade cell uses max(child.touchedAt) / min(child.seenAt) — parent visually pulses when ANY child increments (resolves RESEARCH Open Q #2)
+- [Phase 01.2]: Plan 04: STAGE_DESCENT_ORDER = { toShaken, toHollow, toNumb, toBroken } iterated via ipairs — Pitfall 1 (pairs() non-determinism) mitigation; traitsAcquired uses pairs+table.sort by touchedAt desc with alphabetical fallback (Pattern 7)
+- [Phase 01.2]: Plan 04: Recoveries row uses (RECOVERY_WEIGHT or 0) nil-safe — Phase 3 will define the constant; row hides per D-31 until count>0; deliberate cross-phase contract per D-29
+- [Phase 01.2]: Plan 04: Dev mod folder deployed dev->runtime via cp -rv after Tasks 1-2 commits — closes inter-plan runtime hazard from Plan 03 (kill handlers were calling deleted SanityTraits.log); parity verified on all 4 client lua files via diff -q
 
 ### Pending Todos
 
@@ -124,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29T06:17:48.247Z
-Stopped at: Completed 01.2-03-PLAN.md (bumpCounter API + listbox surgery)
+Last session: 2026-04-29T06:27:09.262Z
+Stopped at: Completed 01.2-04-PLAN.md (renderCounterTree + bumpCounter wire — Phase 01.2 last code plan; awaiting human-verify)
 Resume file: None
