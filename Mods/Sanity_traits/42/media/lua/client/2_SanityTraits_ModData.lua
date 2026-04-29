@@ -21,11 +21,17 @@ function SanityTraits.getStartingSanity(profName)
     return SanityTraits.STARTING_SANITY_BY_PROFESSION[profName] or SanityTraits.SANITY_MAX
 end
 
--- OnCreatePlayer handler — initializes / upgrades per-character SanityTraits ModData (CORE-01, CORE-02, D-11, D-17)
+-- OnCreatePlayer handler — initializes / upgrades per-character SanityTraits ModData.
 -- Fires for BOTH new characters and loaded saves.
---   * New character: seeds full ModData shape including log={} and appliedTraits={}.
---   * Loaded save:   idempotently adds missing log/appliedTraits fields (Phase 1 -> 01.1 migration, RESEARCH Risk 5).
--- Source: 01-RESEARCH.md Pattern 2; ProjectZomboid/media/lua/client/ISUI/PlayerData/ISPlayerData.lua:203
+--   * New character: seeds full Phase 01.2 ModData shape (sanity, appliedStage, profession,
+--                    appliedTraits, counters). The deprecated `log` field is NOT seeded.
+--   * Loaded save:   idempotently adds missing `appliedTraits` (Phase 1 -> 01.1 migration)
+--                    and `counters` (Phase 01.1 -> 01.2 migration). Old `log` field on
+--                    Phase 01.1 saves is left in place (zero functional impact per CONTEXT
+--                    D-27 + RESEARCH Discretion #4).
+--   * Both:          re-zero `touchedAt` and `seenAt` under all counter cells (Pitfall 4
+--                    mitigation — getTimestampMs is wall-clock-since-launch, not save-stable).
+-- Source: 01-RESEARCH.md Pattern 2; 01.2-RESEARCH.md Pattern 6 + Pitfall 4
 local function onCreatePlayer(playerIndex, player)
     if not player then return end
     local md = player:getModData()
@@ -44,8 +50,19 @@ local function onCreatePlayer(playerIndex, player)
             sanity        = startSanity,
             appliedStage  = "Healthy",
             profession    = profName or "unknown",
-            log           = {},   -- D-11: 50-entry FIFO log of sanity events
-            appliedTraits = {},   -- D-17: list of traits this mod has applied
+            appliedTraits = {},   -- D-17: list of traits this mod has applied (populated by Phase 2)
+            counters      = {     -- Phase 01.2 D-29: aggregated counter tree
+                zombiesKilled    = { count = 0 },
+                survivorsKilled  = { count = 0 },
+                stageDescents    = {
+                    toShaken  = { count = 0 },
+                    toHollow  = { count = 0 },
+                    toNumb    = { count = 0 },
+                    toBroken  = { count = 0 },
+                },
+                traitsAcquired   = {},   -- dynamic keys; auto-vivified by SanityTraits.bumpCounter
+                recoveries       = { count = 0 },   -- Phase 3+ populates
+            },
         }
 
         print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
