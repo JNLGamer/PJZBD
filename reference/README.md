@@ -14,11 +14,18 @@ Sources: pzwiki.net (full PDFs preserved in [wiki_dump/](wiki_dump/)), MrBounty/
 | [vanilla_traits.md](vanilla_traits.md) | **All vanilla traits** — costs, XP boosts, exclusions (B42 authoritative) |
 | [traits.md](traits.md) | How to create custom traits (B42 .txt script format + Lua notes) |
 | [items.md](items.md) | Item script variables for all item types |
-| [events.md](events.md) | Event system — hooking into game events |
-| [timed_actions.md](timed_actions.md) | Timed actions (player animations/progress bar) |
-| [ui.md](ui.md) | ISPanel-based UI windows |
+| [events.md](events.md) | Event system overview — hooking into game events (small starter set) |
+| [**events_catalog.md**](events_catalog.md) | **Complete ~130-event catalog** extracted from game source — parameters, when each fires, confidence level, Sanity_traits priority table |
+| [timed_actions.md](timed_actions.md) | Timed action skeleton reference |
+| [**timed_actions_examples.md**](timed_actions_examples.md) | **Annotated vanilla timed action examples** — lifecycle diagram, patterns cheat sheet, 110+ player methods, 8 common pitfalls |
+| [ui.md](ui.md) | ISPanel-based UI windows (overview) |
+| [**ui_elements.md**](ui_elements.md) | **Full UI element API** — all 16 IS* classes with constructors, methods, event hooks, usage patterns |
 | [moddata.md](moddata.md) | Global ModData + JSON/text save data |
-| [wiki_dump/](wiki_dump/) | Full PZwiki page captures (PDFs + extracted text) — authoritative source for the topic-specific docs above |
+| [**player_api.md**](player_api.md) | **IsoPlayer/IsoGameCharacter method reference** — 110+ methods in 14 categories, inferred from game source |
+| [**loot_distributions.md**](loot_distributions.md) | **Procedural loot system** — distribution structure, tags, bulk-insert pattern, OnFillContainer hook |
+| [**lua_optimization.md**](lua_optimization.md) | **Lua performance rules** — caching, locals, load balancing, table.newarray, print() warning |
+| [**lua_api_overview.md**](lua_api_overview.md) | **Java/Lua bridge fundamentals** — `:` vs `.`, constructors, field reflection, hooking, load order, B41→B42 API gotchas |
+| [wiki_dump/](wiki_dump/) | Full PZwiki page captures (PDFs + extracted text) — raw source for docs above |
 
 ## Examples (working Lua / script files)
 
