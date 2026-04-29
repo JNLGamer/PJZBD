@@ -91,8 +91,13 @@ function SanityTraits.applyTimedSanityChange(player)
     end
     md.SanityTraits.wasAsleep = nowAsleep
 
-    -- ── Decay pass (D-44) ──
-    local decayRate = SanityTraits.DECAY_RATE_BY_STAGE[stageKey] or 0
+    -- ── Decay pass (D-44; profile-aware per Phase 4 / Plan 03 OCC-01) ──
+    -- HARDENED 0.7x: Stable rate stays 1 (floor-of-1 holds; max(1, floor(0.7+0.5))=1);
+    --                Numb rate becomes 3 (floor(2.8+0.5)=3, was 4); meaningful slowdown.
+    -- FRAGILE 1.3x:  Stable rate stays 1 (max(1, floor(1.3+0.5))=1);
+    --                Numb rate becomes 5 (floor(5.2+0.5)=5, was 4); ~30% faster decay.
+    -- broken stage absent from DECAY_RATE_BY_STAGE -> getEffectiveDecayRate returns 0 (Pitfall 5 short-circuit).
+    local decayRate = SanityTraits.getEffectiveDecayRate(player, stageKey)
     if decayRate > 0 and sanity > SanityTraits.SANITY_MIN then
         local before = sanity
         sanity = math.max(SanityTraits.SANITY_MIN, before - decayRate)
