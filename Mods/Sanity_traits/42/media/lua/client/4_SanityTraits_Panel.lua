@@ -84,8 +84,17 @@ function SanityPanel:new(x, y, width, height, playerNum)
     o.playerNum = playerNum
     -- D-22: getSpecificPlayer (NOT getPlayer) — matches vanilla ISCharacterProtection style
     o.char = getSpecificPlayer(playerNum)
-    -- Visual styling per UI-SPEC Color section
-    o.background      = true
+    -- GAP-06 closure (Plan 01.1-06 / Issue A): Disable internal chrome via o:noBackground().
+    -- All 5 vanilla tab views call this in their :new (ISCharacterScreen.lua:732,
+    -- ISCharacterInfo.lua:246, ISCharacterProtection.lua:218, ISHealthPanel.lua:967,
+    -- ISClothingInsPanel.lua:750). The inherited ISPanel:prerender (ISPanel.lua:17-22)
+    -- only paints bg+border when self.background is truthy. Our chrome is now provided
+    -- ENTIRELY by the parent ISTabPanel's render (ISTabPanel.lua:93-94 drawRect at
+    -- y=tabHeight), eliminating the visible "window inside a window" effect.
+    o:noBackground()
+    -- backgroundColor and borderColor are kept assigned but INERT (vanilla tab view
+    -- convention preserved — fields document the panel's intended palette but are
+    -- never painted because background=false).
     o.backgroundColor = {r=0,   g=0,   b=0,   a=0.8}
     o.borderColor     = {r=0.4, g=0.4, b=0.4, a=1}
     -- Cache counters used by render-time refresh (Pitfall 5 mitigation).
