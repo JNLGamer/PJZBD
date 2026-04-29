@@ -1,0 +1,22 @@
+module Base
+{
+    character_trait_definition sanitymod:alcoholic
+    {
+        IsProfessionTrait       = true,
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = sanitymod:alcoholic,
+        Cost                    = 0,
+        UIName                  = UI_trait_Alcoholic,
+        UIDescription           = UI_trait_AlcoholicDesc,
+    }
+
+    character_trait_definition sanitymod:painkiller_dependent
+    {
+        IsProfessionTrait       = true,
+        DisabledInMultiplayer   = false,
+        CharacterTrait          = sanitymod:painkiller_dependent,
+        Cost                    = 0,
+        UIName                  = UI_trait_PainkillerDependent,
+        UIDescription           = UI_trait_PainkillerDependentDesc,
+    }
+}
