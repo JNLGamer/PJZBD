@@ -15,6 +15,15 @@
 local function onZombieDead(zed)
     local player = getPlayer()
     if not player then return end
+
+    -- D-36 (Phase 2): in-game off-switch — early-return BEFORE reading ModData if
+    -- the system is disabled. Trips after Broken applies base:desensitized (the
+    -- final tick where evaluator did work; subsequent kills are silent forever).
+    -- Also catches Veteran (vanilla GrantedTraits) — defensive belt-and-suspenders
+    -- with the OnCreatePlayer check (Plan 03), since Veteran's ModData was never
+    -- seeded but kills could still arrive before any other guard.
+    if SanityTraits.isSystemDisabled(player) then return end
+
     local md = player:getModData()
     if not md.SanityTraits then return end  -- guard: ModData not yet initialized
 
@@ -26,6 +35,12 @@ local function onZombieDead(zed)
     -- Delta is signed-negative metadata for the bumpCounter console receipt.
     -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
     SanityTraits.bumpCounter("zombiesKilled", -SanityTraits.ZOMBIE_WEIGHT)
+
+    -- Phase 2 (STAGE-02): evaluate stage transitions AFTER sanity decrement and
+    -- counter bump. Idempotent — if the kill didn't cross a threshold, this is a
+    -- no-op. Cascades through intermediate stages on multi-stage skips (rare in
+    -- single-kill scope; possible if ZOMBIE_WEIGHT is sandbox-tuned high in Phase 6).
+    SanityTraits.evaluateStageTransitions(player)
 end
 
 Events.OnZombieDead.Add(onZombieDead)
@@ -42,6 +57,11 @@ local function onWeaponHitXp(owner, weapon, hitObject, damage, hitCount)
     if instanceof(hitObject, "IsoZombie") then return end
     if not hitObject:isDead() then return end
 
+    -- D-36 (Phase 2): in-game off-switch (after the cheap target-classification filters,
+    -- before ModData access). Same rationale as onZombieDead: catches Broken-applied
+    -- and Veteran characters before sanity arithmetic.
+    if SanityTraits.isSystemDisabled(owner) then return end
+
     local md = owner:getModData()
     if not md.SanityTraits then return end  -- guard: ModData not yet initialized
 
@@ -53,6 +73,11 @@ local function onWeaponHitXp(owner, weapon, hitObject, damage, hitCount)
     -- Delta is signed-negative metadata for the bumpCounter console receipt.
     -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
     SanityTraits.bumpCounter("survivorsKilled", -SanityTraits.SURVIVOR_WEIGHT)
+
+    -- Phase 2 (STAGE-02): evaluate stage transitions AFTER sanity decrement.
+    -- Survivor kill weight (default 30) is 3x zombie weight — more likely to skip
+    -- a stage in one event. The cascade in evaluator handles multi-stage skips.
+    SanityTraits.evaluateStageTransitions(owner)
 end
 
 Events.OnWeaponHitXp.Add(onWeaponHitXp)
