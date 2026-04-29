@@ -27,14 +27,22 @@ local function onZombieDead(zed)
     local md = player:getModData()
     if not md.SanityTraits then return end  -- guard: ModData not yet initialized
 
+    -- Phase 4 / Plan 03 (OCC-03): apply profile.killWeightMultiplier to the kill loss.
+    -- HARDENED bucket (Police/Security/Fire/Veteran/ParkRanger): 0.7x — softer kill.
+    -- FRAGILE bucket (Chef/BurgerFlipper/Tailor): 1.3x — sharper kill.
+    -- AVERAGE bucket (most civilians) + _default: 1.0x — baseline.
+    -- D-37 invariant: existing math.max(SANITY_MIN, ...) clamp byte-preserved; only operand changes.
+    local profile = SanityTraits.getProfessionProfileForPlayer(player)
+    local loss = SanityTraits.ZOMBIE_WEIGHT * (profile.killWeightMultiplier or 1.0)
     local before = md.SanityTraits.sanity
-    md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - SanityTraits.ZOMBIE_WEIGHT)
+    md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - loss)
     print(SanityTraits.LOG_TAG .. " Zombie killed. Sanity: " .. tostring(before)
         .. " -> " .. tostring(md.SanityTraits.sanity))
     -- Phase 01.2 / Plan 04 (D-27): increment the counter tree instead of the deprecated log.
-    -- Delta is signed-negative metadata for the bumpCounter console receipt.
-    -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
-    SanityTraits.bumpCounter("zombiesKilled", -SanityTraits.ZOMBIE_WEIGHT)
+    -- Delta is the actual sanity loss (= raw weight × profile.killWeightMultiplier) so console
+    -- receipts reflect what really happened to sanity. RESEARCH recommendation; supersedes
+    -- the original Phase 01.2 D-27 -SanityTraits.ZOMBIE_WEIGHT raw-weight delta.
+    SanityTraits.bumpCounter("zombiesKilled", -loss)
 
     -- Phase 2 (STAGE-02): evaluate stage transitions AFTER sanity decrement and
     -- counter bump. Idempotent — if the kill didn't cross a threshold, this is a
@@ -65,14 +73,16 @@ local function onWeaponHitXp(owner, weapon, hitObject, damage, hitCount)
     local md = owner:getModData()
     if not md.SanityTraits then return end  -- guard: ModData not yet initialized
 
+    -- Phase 4 / Plan 03 (OCC-03 + OCC-04): apply profile.killWeightMultiplier to the survivor kill.
+    -- Note: helper takes `owner` (the killer), NOT hitObject (the victim).
+    local profile = SanityTraits.getProfessionProfileForPlayer(owner)
+    local loss = SanityTraits.SURVIVOR_WEIGHT * (profile.killWeightMultiplier or 1.0)
     local before = md.SanityTraits.sanity
-    md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - SanityTraits.SURVIVOR_WEIGHT)
+    md.SanityTraits.sanity = math.max(SanityTraits.SANITY_MIN, before - loss)
     print(SanityTraits.LOG_TAG .. " Survivor killed. Sanity: " .. tostring(before)
         .. " -> " .. tostring(md.SanityTraits.sanity))
-    -- Phase 01.2 / Plan 04 (D-27): increment the counter tree instead of the deprecated log.
-    -- Delta is signed-negative metadata for the bumpCounter console receipt.
-    -- The actual sanity decrement is already applied above; bumpCounter does NOT touch sanity.
-    SanityTraits.bumpCounter("survivorsKilled", -SanityTraits.SURVIVOR_WEIGHT)
+    -- Phase 01.2 / Plan 04 (D-27) + Phase 4 amendment: counter delta is actual sanity loss.
+    SanityTraits.bumpCounter("survivorsKilled", -loss)
 
     -- Phase 2 (STAGE-02): evaluate stage transitions AFTER sanity decrement.
     -- Survivor kill weight (default 30) is 3x zombie weight — more likely to skip
