@@ -3,22 +3,22 @@
 -- Loaded after 1_SanityTraits_Init.lua (alphabetical/numeric prefix order).
 -- Source: .planning/phases/01-foundation/01-RESEARCH.md Patterns 2 & 5
 
--- Profession archetype starting sanity (Phase 1 seed; Phase 4 will replace with full 24-profession psyche profile table)
--- Source: 01-RESEARCH.md Pattern 5; profession ids verified in reference/occupations.md
-SanityTraits.STARTING_SANITY_BY_PROFESSION = {
-    ["base:veteran"]       = 200,   -- starts near-desensitized (CORE-02 / OCC-02 seed; Phase 4 will mark stage)
-    ["base:policeofficer"] = 850,   -- military/police archetype (OCC-03)
-    ["base:securityguard"] = 850,   -- military/police archetype (OCC-03)
-    ["base:fireofficer"]   = 850,   -- military/police archetype (OCC-03)
-    ["base:doctor"]        = 900,   -- medical archetype (OCC-04)
-    ["base:nurse"]         = 900,   -- medical archetype (OCC-04)
-    ["base:parkranger"]    = 900,   -- medical-adjacent archetype (OCC-04)
-}
+-- Phase 4 / Plan 03: Profession seed table superseded by SanityTraits.PROFESSION_PROFILES
+-- in 7_SanityTraits_Professions.lua (25 vanilla rows + _default; D-48 5-field shape).
+-- The Phase 1 7-entry seed table (formerly here at lines 8-16) was removed wholesale per
+-- amended D-50 Edit 1. The historic values it carried (Veteran=200, Police/Security/Fire=850,
+-- Doctor/Nurse/ParkRanger=900) are NOT preserved — Phase 4's 5-bucket model uses different
+-- numbers (HARDENED=1000 + thresholdShift=-150; SCHOLAR=1000 + decayMultiplier=0.95;
+-- ENTERTAINER=1000 + thresholdShift=-50; FRAGILE=950 + thresholdShift=+75; AVERAGE=1000).
+-- Veteran's runtime mechanics are unchanged: D-36 isSystemDisabled trips at line 48 below
+-- because vanilla GrantedTraits = base:desensitized fires HasTrait true at character creation.
+--
+-- getStartingSanity is kept as a thin backward-compat wrapper (Discretion option B from
+-- 04-RESEARCH.md) — the call site at line 63 below stays unchanged byte-for-byte.
 
--- Returns starting sanity for a profession; falls back to SANITY_MAX (1000) for unknown/civilian/modded professions (OCC-05)
+-- Returns starting sanity for a profession via the new profile system (CORE-02 / OCC-01 / OCC-05)
 function SanityTraits.getStartingSanity(profName)
-    if profName == nil then return SanityTraits.SANITY_MAX end
-    return SanityTraits.STARTING_SANITY_BY_PROFESSION[profName] or SanityTraits.SANITY_MAX
+    return SanityTraits.getProfessionProfile(profName).startingSanity
 end
 
 -- OnCreatePlayer handler — initializes / upgrades per-character SanityTraits ModData.
@@ -81,7 +81,9 @@ local function onCreatePlayer(playerIndex, player)
             },
         }
 
+        local profile = SanityTraits.getProfessionProfile(profName)
         print(SanityTraits.LOG_TAG .. " OnCreatePlayer: profession=" .. tostring(profName)
+            .. " bucket=" .. tostring(profile.bucket)
             .. " startingSanity=" .. tostring(startSanity))
     else
         -- Loaded save. Idempotently upgrade missing fields (Phase 1 -> 01.1 -> 01.2 migration).
