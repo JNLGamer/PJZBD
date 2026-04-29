@@ -108,6 +108,55 @@ function SanityPanel:initialise()
     ISPanelJoypad.initialise(self)
 end
 
+-- GAP-06 closure (Plan 01.1-06 / Issue B-A): setWidth override.
+-- Routes through ISPanelJoypad super to update self.width, then reflows children
+-- so self.eventLog geometry and self.debuffSlots Y positions track the new dim.
+-- Called from per-frame parent-dim sample in :render when self.parent:getWidth()
+-- differs from self.width. Also fires automatically if any future code path
+-- (or a sibling mod) calls setWidth on our panel directly.
+function SanityPanel:setWidth(w)
+    ISPanelJoypad.setWidth(self, w)
+    self:reflowLayout()
+end
+
+-- GAP-06 closure (Plan 01.1-06 / Issue B-A): setHeight override (mirror).
+function SanityPanel:setHeight(h)
+    ISPanelJoypad.setHeight(self, h)
+    self:reflowLayout()
+end
+
+-- GAP-06 closure (Plan 01.1-06 / Issue B-A): reflowLayout helper.
+-- Recomputes self.eventLog geometry and self.debuffSlots Y positions from the
+-- CURRENT self.width/self.height (post-setWidth/setHeight). Bar geometry is
+-- procedural-drawn in :render directly from self.width — no reflow call needed
+-- for the bar (it self-reflows via the parametric barX = self.width - barW - 10).
+-- Magic numbers (logX=10, logY=62, slotSize=24, bottomMargin=10, barW=18) match
+-- the values in :createChildren. Future tweak: hoist these to constants if more
+-- methods need them.
+function SanityPanel:reflowLayout()
+    -- eventLog geometry (recomputed from self.width and self.height)
+    if self.eventLog then
+        local logX = 10
+        local logY = 62
+        local debuffRowY = self.height - 24 - 10
+        local logH = math.max(40, debuffRowY - logY - 8)
+        local logW = self.width - 20 - (18 + 18)   -- parametric on barW=18 (matches Plan 05 form)
+        self.eventLog:setX(logX)
+        self.eventLog:setY(logY)
+        self.eventLog:setWidth(logW)
+        self.eventLog:setHeight(logH)
+    end
+    -- debuffSlots Y positions (X stays at construction-time row positions)
+    if self.debuffSlots then
+        local rowY = self.height - 24 - 10   -- slotSize=24, bottomMargin=10
+        for i = 1, SanityTraits.DEBUFF_SLOT_COUNT do
+            if self.debuffSlots[i] then
+                self.debuffSlots[i]:setY(rowY)
+            end
+        end
+    end
+end
+
 function SanityPanel:createChildren()
     ISPanelJoypad.createChildren(self)
 
@@ -340,6 +389,27 @@ end
 -- Per-frame redraw (D-20). Re-reads md.SanityTraits each call — no event subscription,
 -- no polling. Listbox + debuff row only rebuild when their cached counts changed.
 function SanityPanel:render()
+    -- GAP-06 closure (Plan 01.1-06 / Issue B-B): per-frame parent-dim sample.
+    -- ISTabPanel does NOT propagate resize to child views (verified zero matches
+    -- for setWidth|setHeight|onResize in ISTabPanel.lua). ISCharacterScreen's
+    -- render-time setWidthAndParentWidth (ISCharacterScreen.lua:108) walks the
+    -- parent chain UPWARD only (ISUIElement.lua:180-189) — sibling tab views
+    -- never receive the resize. We compensate by sampling parent dims each frame
+    -- and routing through self:setWidth/:setHeight (which reflow children via
+    -- the override added above). The (parent.height - parent.tabHeight) subtraction
+    -- matches ISTabPanel:render line 93 which paints content area at y=tabHeight.
+    if self.parent then
+        local pw = self.parent:getWidth()
+        local th = self.parent.tabHeight or 0
+        local ph = self.parent:getHeight() - th
+        if pw and pw > 0 and pw ~= self.width then
+            self:setWidth(pw)
+        end
+        if ph and ph > 0 and ph ~= self.height then
+            self:setHeight(ph)
+        end
+    end
+
     -- Re-acquire player if it was nil at construction (Pitfall 6 mitigation)
     if not self.char then
         self.char = getSpecificPlayer(self.playerNum)
