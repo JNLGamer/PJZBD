@@ -362,11 +362,15 @@ function SanityPanel:render()
 
     self:drawSanityBar(barX, barY, barW, barH, sanity, sanityMax)
 
-    -- D-06 numeric readout EXACTLY in format "%d / %d (%d%%)" — TOP-LEFT (was right of bar)
+    -- D-26 numeric readout EXACTLY in format "%d%%" — TOP-LEFT.
+    -- (Phase 01.2 supersedes Phase 01.1 D-06 "%d / %d (%d%%)" format.)
+    -- Internal md.sanity stays a 0-1000 raw integer; pct is render-time derived.
+    -- F11 console invariant preserved: getPlayer():getModData().SanityTraits.sanity
+    -- still returns 1000 (raw), not 100 (pct). All internal math on raw points.
     local readoutX = 10
     local readoutY = 10
     local pct = math.floor((sanity / sanityMax) * 100)
-    local readout = string.format("%d / %d (%d%%)", sanity, sanityMax, pct)
+    local readout = string.format("%d%%", pct)
     self:drawText(readout, readoutX, readoutY, 1, 1, 1, 1, UIFont.Small)
 
     -- D-09 stage label "Stage: <thematic>" — TOP-LEFT below readout (was below bar)
@@ -376,14 +380,18 @@ function SanityPanel:render()
     local stageName = SanityTraits.STAGE_NAMES[stageKey] or stageKey
     self:drawText("Stage: " .. stageName, stageX, stageY, 1, 1, 1, 1, UIFont.Medium)
 
-    -- GAP-03 closure (Plan 01.1-05): 1px horizontal divider between header and event log.
-    -- Y=50 sits between stage label glyph bottom (~48) and logY (62). Color matches panel
-    -- border {r=0.4,g=0.4,b=0.4} for visual consistency. Width parametric on barW so the
-    -- divider stops at the listbox's right edge (does not extend under the bar column).
+    -- GAP-03 closure (Plan 01.1-05): 1px horizontal divider between header and content area.
+    -- Y=50 sits between stage label glyph bottom (~48) and counter tree top (62). Color matches
+    -- panel border {r=0.4,g=0.4,b=0.4} for visual consistency. Width parametric on barW so the
+    -- divider stops short of the bar column (kept verbatim from Phase 01.1 for visual continuity
+    -- — the (barW + 18) margin still matches what the listbox right-edge used to be).
     self:drawRect(10, 50, self.width - 20 - (barW + 18), 1, 1, 0.4, 0.4, 0.4)
 
-    -- ── Refresh listbox + debuff row only when their counts changed ──
-    self:refreshLogList(md)
+    -- ── Refresh debuff row only when count changed (listbox removed in Phase 01.2) ──
+    -- Counter tree (Phase 01.2 / Plan 04) is rendered via self:renderCounterTree(md)
+    -- — that call is added in Plan 04. For this plan (Plan 03), the counter tree
+    -- is not yet drawn; the area below the header divider is intentionally empty
+    -- until Plan 04 ships.
     self:refreshDebuffRow(md)
 
     -- ── Procedural fallback rect for any debuff slot whose trait texture is nil ──
