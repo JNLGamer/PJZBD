@@ -1,0 +1,6 @@
+name=Sanity Traits
+id=Sanity_traits
+description=Psychological deterioration system. Characters spiral through mental health stages driven by kill events, time, and mood.
+modversion=1.0
+pzversion=42
+versionMin=42.0.0

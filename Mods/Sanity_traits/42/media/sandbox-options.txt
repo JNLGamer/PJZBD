@@ -1,0 +1,78 @@
+VERSION = 1,
+
+option SanityTraits.ZombieWeight
+{
+    type = integer,
+    default = 25,
+    min = 0,
+    max = 200,
+
+    page = SanityTraits,
+    translation = SanityTraits_ZombieWeight,
+}
+
+option SanityTraits.SurvivorWeight
+{
+    type = integer,
+    default = 60,
+    min = 0,
+    max = 400,
+
+    page = SanityTraits,
+    translation = SanityTraits_SurvivorWeight,
+}
+
+option SanityTraits.DecayMultiplier
+{
+    type = double,
+    default = 1.0,
+    min = 0.0,
+    max = 5.0,
+
+    page = SanityTraits,
+    translation = SanityTraits_DecayMultiplier,
+}
+
+option SanityTraits.RecoveryMultiplier
+{
+    type = double,
+    default = 1.0,
+    min = 0.0,
+    max = 5.0,
+
+    page = SanityTraits,
+    translation = SanityTraits_RecoveryMultiplier,
+}
+
+option SanityTraits.SadThreshold
+{
+    type = integer,
+    default = 750,
+    min = 100,
+    max = 999,
+
+    page = SanityTraits,
+    translation = SanityTraits_SadThreshold,
+}
+
+option SanityTraits.DepressedThreshold
+{
+    type = integer,
+    default = 500,
+    min = 100,
+    max = 900,
+
+    page = SanityTraits,
+    translation = SanityTraits_DepressedThreshold,
+}
+
+option SanityTraits.TraumatizedThreshold
+{
+    type = integer,
+    default = 250,
+    min = 50,
+    max = 800,
+
+    page = SanityTraits,
+    translation = SanityTraits_TraumatizedThreshold,
+}

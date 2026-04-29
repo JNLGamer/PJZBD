@@ -1,0 +1,6 @@
+Trait_EN = {
+    UI_trait_Alcoholic = "Alcoholic",
+    UI_trait_AlcoholicDesc = "When everything fell apart, the bottle helped you stand. It still does. You can't put it down.",
+    UI_trait_PainkillerDependent = "Painkiller-Dependent",
+    UI_trait_PainkillerDependentDesc = "Pain — physical, emotional, or both — became something to medicate. The pills are part of you now.",
+}
